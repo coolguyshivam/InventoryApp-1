@@ -4,7 +4,7 @@
             "outputFile": "com.example.inventoryapp-mergeDebugResources-55:/values-pt/values-pt.xml",
             "map": [
                 {
-                    "source": "C:\\Users\\Dell\\.gradle\\caches\\transforms-3\\8d62c9832f103cc2248827796a988c07\\transformed\\jetified-material3-release\\res\\values-pt\\values-pt.xml",
+                    "source": "C:\\Users\\Dell\\.gradle\\caches\\transforms-3\\267bd701e45f19abf9e03f7cfed5eadb\\transformed\\jetified-material3-release\\res\\values-pt\\values-pt.xml",
                     "from": {
                         "startLines": "2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31,32,33,34,35,36,37,38,39,40,41,42,43,44,45,46,47,48,49,50,51,52,53,54,55,56,57",
                         "startColumns": "4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4",
@@ -21,7 +21,7 @@
                     }
                 },
                 {
-                    "source": "C:\\Users\\Dell\\.gradle\\caches\\transforms-3\\b15c9fde68267bf221b8613fcb27a20c\\transformed\\jetified-foundation-release\\res\\values-pt\\values-pt.xml",
+                    "source": "C:\\Users\\Dell\\.gradle\\caches\\transforms-3\\2903afbb31e36db2e0fd3f5d8206461a\\transformed\\jetified-foundation-release\\res\\values-pt\\values-pt.xml",
                     "from": {
                         "startLines": "2,3",
                         "startColumns": "4,4",
@@ -38,7 +38,7 @@
                     }
                 },
                 {
-                    "source": "C:\\Users\\Dell\\.gradle\\caches\\transforms-3\\2c13a46636bc2fd857ab79ce3fcf94e9\\transformed\\jetified-ui-release\\res\\values-pt\\values-pt.xml",
+                    "source": "C:\\Users\\Dell\\.gradle\\caches\\transforms-3\\c5fcbff6020d34efacce89ac64408875\\transformed\\jetified-ui-release\\res\\values-pt\\values-pt.xml",
                     "from": {
                         "startLines": "2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18",
                         "startColumns": "4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4",
@@ -55,7 +55,7 @@
                     }
                 },
                 {
-                    "source": "C:\\Users\\Dell\\.gradle\\caches\\transforms-3\\01eaad9e1ae31a846be688c5b768d4b0\\transformed\\core-1.12.0\\res\\values-pt\\values-pt.xml",
+                    "source": "C:\\Users\\Dell\\.gradle\\caches\\transforms-3\\d15854857c5f439d7752ea2496cb573c\\transformed\\core-1.12.0\\res\\values-pt\\values-pt.xml",
                     "from": {
                         "startLines": "2,3,4,5,6,7,8,9",
                         "startColumns": "4,4,4,4,4,4,4,4",

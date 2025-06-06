@@ -1,133 +1,104 @@
 package com.example.inventoryapp.ui
 
+import android.annotation.SuppressLint
 import androidx.compose.foundation.Image
-import androidx.compose.foundation.clickable
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import coil.compose.rememberAsyncImagePainter
 import com.google.firebase.firestore.FirebaseFirestore
-import com.google.firebase.firestore.QueryDocumentSnapshot
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.tasks.await
 
 data class TransactionRecord(
-    val id: String = "",
-    val itemName: String = "",
+    val transactionType: String = "",
     val serialNumber: String = "",
+    val itemName: String = "",
     val customerName: String = "",
+    val phoneNumber: String = "",
+    val aadhaarNumber: String = "",
+    val amount: String = "",
+    val date: String = "",
     val timestamp: Long = 0L,
-    val type: String = "Sale",
     val imageUrls: List<String> = emptyList()
 )
 
 @Composable
 fun TransactionListScreen() {
-    var transactions by remember { mutableStateOf<List<TransactionRecord>>(emptyList()) }
-    var selectedTransaction by remember { mutableStateOf<TransactionRecord?>(null) }
-
     val db = FirebaseFirestore.getInstance()
+    var transactions by remember { mutableStateOf<List<TransactionRecord>>(emptyList()) }
+    val coroutineScope = rememberCoroutineScope()
 
-    // Load Firestore transactions (sales + purchases)
     LaunchedEffect(Unit) {
-        val sales = db.collection("sales").get().await().documents.mapNotNull {
-            it.toTransactionRecord("Sale")
-        }
-        val purchases = db.collection("purchases").get().await().documents.mapNotNull {
-            it.toTransactionRecord("Purchase")
-        }
+        coroutineScope.launch {
+            val snapshot = db.collection("transactions")
+                .orderBy("timestamp")
+                .get()
+                .await()
 
-        transactions = (sales + purchases).sortedByDescending { it.timestamp }
+            val data = snapshot.documents.mapNotNull { doc ->
+                doc.toObject(TransactionRecord::class.java)
+            }
+
+            transactions = data.reversed() // latest first
+        }
     }
 
-    Column(modifier = Modifier.fillMaxSize().padding(8.dp)) {
-        Text("Transaction History", style = MaterialTheme.typography.titleLarge)
-
-        LazyColumn {
-            items(transactions) { txn ->
-                val cardColor = if (txn.type == "Sale") Color(0xFFFFE0E0) else Color(0xFFD0F5DC)
-                Card(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(vertical = 6.dp)
-                        .clickable { selectedTransaction = txn },
-                    colors = CardDefaults.cardColors(containerColor = cardColor)
-                ) {
-                    Column(modifier = Modifier.padding(12.dp)) {
-                        Text("Item: ${txn.itemName}")
-                        Text("Serial: ${txn.serialNumber}")
-                        Text("Customer: ${txn.customerName}")
-                        Text("Type: ${txn.type}")
-                        Text("Date: ${java.text.SimpleDateFormat("dd MMM yyyy HH:mm").format(java.util.Date(txn.timestamp))}")
-                        if (txn.imageUrls.isNotEmpty()) {
-                            Spacer(modifier = Modifier.height(8.dp))
-                            Row {
-                                txn.imageUrls.take(3).forEach { url ->
-                                    Image(
-                                        painter = rememberAsyncImagePainter(url),
-                                        contentDescription = null,
-                                        modifier = Modifier.size(80.dp).padding(end = 6.dp)
-                                    )
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-        }
-
-        // Detail dialog
-        selectedTransaction?.let { txn ->
-            AlertDialog(
-                onDismissRequest = { selectedTransaction = null },
-                confirmButton = {
-                    TextButton(onClick = { selectedTransaction = null }) { Text("Close") }
-                },
-                title = { Text("Transaction Details") },
-                text = {
-                    Column {
-                        Text("Item: ${txn.itemName}")
-                        Text("Serial: ${txn.serialNumber}")
-                        Text("Customer: ${txn.customerName}")
-                        Text("Type: ${txn.type}")
-                        Text("Date: ${java.text.SimpleDateFormat("dd MMM yyyy HH:mm").format(java.util.Date(txn.timestamp))}")
-                        if (txn.imageUrls.isNotEmpty()) {
-                            Spacer(modifier = Modifier.height(8.dp))
-                            Text("Attached Images:")
-                            Row {
-                                txn.imageUrls.forEach { url ->
-                                    Image(
-                                        painter = rememberAsyncImagePainter(url),
-                                        contentDescription = null,
-                                        modifier = Modifier.size(100.dp).padding(end = 8.dp)
-                                    )
-                                }
-                            }
-                        }
-                    }
-                }
-            )
+    LazyColumn(modifier = Modifier.fillMaxSize().padding(8.dp)) {
+        items(transactions) { transaction ->
+            TransactionCard(transaction)
         }
     }
 }
 
-private fun QueryDocumentSnapshot.toTransactionRecord(type: String): TransactionRecord? {
-    val serial = getString("serialNumber") ?: return null
-    val item = getString("itemName") ?: ""
-    val customer = getString("customerName") ?: ""
-    val ts = getLong("timestamp") ?: 0L
-    val urls = get("imageUrls") as? List<String> ?: emptyList()
+@Composable
+fun TransactionCard(transaction: TransactionRecord) {
+    val isSale = transaction.transactionType.equals("Sale", ignoreCase = true)
+    val cardColor = if (isSale) Color(0xFFFFCDD2) else Color(0xFFC8E6C9)
 
-    return TransactionRecord(
-        id = id,
-        itemName = item,
-        serialNumber = serial,
-        customerName = customer,
-        timestamp = ts,
-        type = type,
-        imageUrls = urls
-    )
+    Card(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(vertical = 6.dp),
+        colors = CardDefaults.cardColors(containerColor = cardColor),
+        elevation = CardDefaults.cardElevation(4.dp)
+    ) {
+        Column(modifier = Modifier.padding(12.dp)) {
+            Text("Type: ${transaction.transactionType}", fontWeight = FontWeight.Bold)
+            Text("Serial: ${transaction.serialNumber}")
+            Text("Item: ${transaction.itemName}")
+            Text("Customer: ${transaction.customerName}")
+            Text("Phone: ${transaction.phoneNumber}")
+            Text("Aadhaar: ${transaction.aadhaarNumber}")
+            Text("Amount: ₹${transaction.amount}")
+            Text("Date: ${transaction.date}")
+
+            if (transaction.imageUrls.isNotEmpty()) {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(top = 8.dp),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    transaction.imageUrls.take(3).forEach { url ->
+                        Image(
+                            painter = rememberAsyncImagePainter(url),
+                            contentDescription = null,
+                            modifier = Modifier
+                                .size(80.dp)
+                                .background(Color.LightGray)
+                        )
+                    }
+                }
+            }
+        }
+    }
 }

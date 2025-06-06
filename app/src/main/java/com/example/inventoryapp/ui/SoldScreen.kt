@@ -98,11 +98,12 @@ fun SoldScreen() {
     }
 }
 
-private fun QueryDocumentSnapshot.toSoldItem(): SoldItem? {
-    val serial = getString("serialNumber") ?: return null
-    val item = getString("itemName") ?: ""
-    val customer = getString("customerName") ?: ""
-    val ts = getLong("timestamp") ?: 0L
-    val urls = get("imageUrls") as? List<String> ?: emptyList()
-    return SoldItem(serial, item, customer, ts, urls)
+fun QueryDocumentSnapshot.toSoldItem(): SoldItem {
+    return SoldItem(
+        serialNumber = getString("serialNumber") ?: "",
+        itemName = getString("itemName") ?: "",
+        customerName = getString("customerName") ?: "",
+        timestamp = getLong("timestamp") ?: 0L,
+        imageUrls = get("imageUrls") as? List<String> ?: emptyList()
+    )
 }

@@ -19,6 +19,8 @@ import com.google.mlkit.vision.barcode.Barcode
 import com.google.mlkit.vision.barcode.BarcodeScanning
 import com.google.mlkit.vision.common.InputImage
 import java.util.concurrent.Executors
+import androidx.camera.core.CameraSelector
+import androidx.camera.core.ImageProxy
 
 @Composable
 fun BarcodeScannerScreen(navController: NavHostController) {

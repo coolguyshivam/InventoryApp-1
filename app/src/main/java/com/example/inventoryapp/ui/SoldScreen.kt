@@ -3,107 +3,85 @@ package com.example.inventoryapp.ui
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import coil.compose.rememberAsyncImagePainter
+import com.google.firebase.firestore.DocumentSnapshot
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.Query
-import com.google.firebase.firestore.QueryDocumentSnapshot
-import java.text.SimpleDateFormat
-import java.util.*
-
-data class SoldItem(
-    val serialNumber: String,
-    val itemName: String,
-    val customerName: String,
-    val timestamp: Long,
-    val imageUrls: List<String>
-)
+import kotlinx.coroutines.launch
 
 @Composable
 fun SoldScreen() {
     val db = FirebaseFirestore.getInstance()
-    val salesRef = db.collection("sales").orderBy("timestamp", Query.Direction.DESCENDING)
+    val salesCollection = db.collection("transactions").whereEqualTo("transactionType", "Sale").orderBy("timestamp", Query.Direction.DESCENDING)
 
-    var soldItems by remember { mutableStateOf(listOf<SoldItem>()) }
-    var lastVisible by remember { mutableStateOf<QueryDocumentSnapshot?>(null) }
-    var isLoading by remember { mutableStateOf(false) }
+    var soldItems by remember { mutableStateOf<List<TransactionRecord>>(emptyList()) }
+    var lastVisible by remember { mutableStateOf<DocumentSnapshot?>(null) }
+    var isLoadingMore by remember { mutableStateOf(false) }
 
     val listState = rememberLazyListState()
+    val coroutineScope = rememberCoroutineScope()
 
     // Initial load
     LaunchedEffect(Unit) {
-        salesRef.limit(200).get().addOnSuccessListener { snapshot ->
-            val items = snapshot.documents.mapNotNull { it.toSoldItem() }
-            soldItems = items
-            lastVisible = snapshot.documents.lastOrNull() as? QueryDocumentSnapshot
+        salesCollection.limit(200).addSnapshotListener { snapshot, _ ->
+            snapshot?.let {
+                soldItems = it.documents.mapNotNull { doc -> doc.toObject(TransactionRecord::class.java) }
+                lastVisible = it.documents.lastOrNull()
+            }
         }
     }
 
-    // Pagination
+    // Load more on scroll
     LaunchedEffect(listState.firstVisibleItemIndex) {
-        if (!isLoading &&
-            listState.firstVisibleItemIndex >= soldItems.size - 5 &&
-            lastVisible != null
-        ) {
-            isLoading = true
-            salesRef.startAfter(lastVisible!!).limit(100).get().addOnSuccessListener { snapshot ->
-                val moreItems = snapshot.documents.mapNotNull { it.toSoldItem() }
+        val total = listState.layoutInfo.totalItemsCount
+        if (listState.firstVisibleItemIndex + 5 >= total && !isLoadingMore && lastVisible != null) {
+            isLoadingMore = true
+            salesCollection.startAfter(lastVisible!!).limit(100).get().addOnSuccessListener { snapshot ->
+                val moreItems = snapshot.documents.mapNotNull { doc -> doc.toObject(TransactionRecord::class.java) }
                 soldItems = soldItems + moreItems
-                lastVisible = snapshot.documents.lastOrNull() as? QueryDocumentSnapshot
-                isLoading = false
+                lastVisible = snapshot.documents.lastOrNull()
+                isLoadingMore = false
             }
         }
     }
 
-    LazyColumn(modifier = Modifier.fillMaxSize().padding(8.dp), state = listState) {
-        items(soldItems) { item ->
-            Card(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(vertical = 6.dp),
-                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant)
-            ) {
-                Column(modifier = Modifier.padding(12.dp)) {
-                    Text("Item: ${item.itemName}")
-                    Text("Serial: ${item.serialNumber}")
-                    Text("Customer: ${item.customerName}")
-                    Text("Date: ${SimpleDateFormat("dd MMM yyyy HH:mm").format(Date(item.timestamp))}")
-
-                    if (item.imageUrls.isNotEmpty()) {
-                        Spacer(modifier = Modifier.height(8.dp))
-                        Row {
-                            item.imageUrls.take(3).forEach { url ->
-                                Image(
-                                    painter = rememberAsyncImagePainter(url),
-                                    contentDescription = null,
-                                    modifier = Modifier.size(80.dp).padding(end = 6.dp)
-                                )
-                            }
-                        }
-                    }
-                }
-            }
-        }
-
-        if (isLoading) {
-            item {
-                CircularProgressIndicator(modifier = Modifier.padding(16.dp))
-            }
+    LazyColumn(state = listState, modifier = Modifier.fillMaxSize().padding(8.dp)) {
+        items(soldItems.size) { index ->
+            val transaction = soldItems[index]
+            SoldItemCard(transaction)
         }
     }
 }
 
-fun QueryDocumentSnapshot.toSoldItem(): SoldItem {
-    return SoldItem(
-        serialNumber = getString("serialNumber") ?: "",
-        itemName = getString("itemName") ?: "",
-        customerName = getString("customerName") ?: "",
-        timestamp = getLong("timestamp") ?: 0L,
-        imageUrls = get("imageUrls") as? List<String> ?: emptyList()
-    )
+@Composable
+fun SoldItemCard(transaction: TransactionRecord) {
+    Card(
+        modifier = Modifier.fillMaxWidth().padding(vertical = 6.dp),
+        elevation = CardDefaults.cardElevation(4.dp)
+    ) {
+        Column(modifier = Modifier.padding(12.dp)) {
+            Text("Sold: ${transaction.itemName}")
+            Text("Serial: ${transaction.serialNumber}")
+            Text("Customer: ${transaction.customerName}")
+            Text("Amount: ₹${transaction.amount}")
+            Text("Date: ${transaction.date}")
+
+            if (transaction.imageUrls.isNotEmpty()) {
+                Row(modifier = Modifier.fillMaxWidth().padding(top = 8.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    transaction.imageUrls.take(3).forEach { url ->
+                        Image(
+                            painter = rememberAsyncImagePainter(url),
+                            contentDescription = null,
+                            modifier = Modifier.size(80.dp)
+                        )
+                    }
+                }
+            }
+        }
+    }
 }

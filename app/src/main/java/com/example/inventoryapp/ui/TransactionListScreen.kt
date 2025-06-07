@@ -17,6 +17,8 @@ import coil.compose.rememberAsyncImagePainter
 import com.google.firebase.firestore.FirebaseFirestore
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.tasks.await
+import androidx.compose.ui.platform.LocalLifecycleOwner
+import com.google.mlkit.vision.barcode.common.Barcode
 
 data class TransactionRecord(
     val transactionType: String = "",

@@ -6,6 +6,10 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.navigation.*
 import androidx.navigation.compose.*
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.List
+import androidx.compose.material.icons.filled.History
+import androidx.compose.material.icons.filled.Receipt
 
 @Composable
 fun MainScreen() {
@@ -41,7 +45,6 @@ fun MainScreen() {
                 val sale = backStackEntry.arguments?.getString("sale") == "true"
                 val serial = backStackEntry.arguments?.getString("serial") ?: ""
                 val item = backStackEntry.arguments?.getString("item") ?: ""
-                TransactionScreenWithArgs(sale, serial, item, navController)
 				TransactionScreen(
 				navController = navController,
 				defaultType = if (sale) "Sale" else "Purchase",

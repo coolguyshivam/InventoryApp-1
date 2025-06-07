@@ -1,6 +1,5 @@
 package com.example.inventoryapp.ui
 
-import android.Manifest
 import android.util.Size
 import androidx.camera.core.*
 import androidx.camera.lifecycle.ProcessCameraProvider
@@ -21,12 +20,13 @@ fun BarcodeScannerScreen(onScanned: (String) -> Unit) {
     val previewView = remember { PreviewView(context) }
     val executor = remember { Executors.newSingleThreadExecutor() }
 
-    AndroidView(factory = { previewView }, modifier = Modifier) // Optional fillMaxSize()
+    AndroidView(factory = { previewView }, modifier = Modifier)
 
     LaunchedEffect(Unit) {
         val cameraProvider = ProcessCameraProvider.getInstance(context).get()
-        val preview = Preview.Builder().build().also {
-            it.setSurfaceProvider(previewView.surfaceProvider)
+
+        val preview = Preview.Builder().build().apply {
+            setSurfaceProvider(previewView.surfaceProvider)
         }
 
         val barcodeScanner = BarcodeScanning.getClient()
@@ -41,12 +41,13 @@ fun BarcodeScannerScreen(onScanned: (String) -> Unit) {
                 val image = InputImage.fromMediaImage(mediaImage, imageProxy.imageInfo.rotationDegrees)
                 barcodeScanner.process(image)
                     .addOnSuccessListener { barcodes ->
-                        barcodes.firstOrNull()?.rawValue?.let {
-                            onScanned(it)
+                        barcodes.firstOrNull()?.rawValue?.let { result ->
+                            onScanned(result)
                         }
                     }
-                    .addOnFailureListener { /* Ignore */ }
-                    .addOnCompleteListener { imageProxy.close() }
+                    .addOnCompleteListener {
+                        imageProxy.close()
+                    }
             } else {
                 imageProxy.close()
             }

@@ -1,35 +1,87 @@
 package com.example.inventoryapp.ui
 
-import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.unit.dp
-import androidx.navigation.NavHostController
+import androidx.navigation.*
+import androidx.navigation.compose.*
 
 @Composable
-fun MainScreen(navController: NavHostController) {
-    var selectedTab by remember { mutableStateOf(0) }
-    val tabs = listOf("Inventory", "Transaction", "Reports", "Sold")
+fun MainScreen() {
+    val navController = rememberNavController()
 
-    Column(modifier = Modifier.fillMaxSize().padding(10.dp)) {
-        TabRow(selectedTabIndex = selectedTab) {
-            tabs.forEachIndexed { index, title ->
-                Tab(
-                    text = { Text(title) },
-                    selected = selectedTab == index,
-                    onClick = { selectedTab = index }
+    Scaffold(
+        bottomBar = {
+            BottomNavigationBar(navController)
+        }
+    ) { padding ->
+        NavHost(navController, startDestination = "inventory", modifier = Modifier.padding(padding)) {
+
+            composable("inventory") {
+                InventoryScreen(navController)
+            }
+
+            composable("sold") {
+                SoldScreen()
+            }
+
+            composable("transactions") {
+                TransactionListScreen()
+            }
+
+            composable(
+                "transaction?sale={sale}&serial={serial}&item={item}",
+                arguments = listOf(
+                    navArgument("sale") { defaultValue = "false" },
+                    navArgument("serial") { defaultValue = "" },
+                    navArgument("item") { defaultValue = "" }
                 )
+            ) { backStackEntry ->
+                val sale = backStackEntry.arguments?.getString("sale") == "true"
+                val serial = backStackEntry.arguments?.getString("serial") ?: ""
+                val item = backStackEntry.arguments?.getString("item") ?: ""
+                TransactionScreenWithArgs(sale, serial, item, navController)
+				TransactionScreen(
+				navController = navController,
+				defaultType = if (sale) "Sale" else "Purchase",
+				defaultSerial = serial,
+				defaultItem = item
+				)
+            }
+
+            composable("scanner") {
+                BarcodeScannerScreen { scannedValue ->
+                    // Navigate back and prefill serial field
+                    navController.popBackStack()
+                }
             }
         }
+    }
+}
 
-        Spacer(modifier = Modifier.height(10.dp))
+@Composable
+fun BottomNavigationBar(navController: NavHostController) {
+    NavigationBar {
+        val current = navController.currentBackStackEntryAsState().value?.destination?.route
 
-        when (selectedTab) {
-            0 -> InventoryScreen(navController)
-            1 -> TransactionScreen(navController)
-            2 -> TransactionListScreen()
-            3 -> SoldScreen()
-        }
+        NavigationBarItem(
+            selected = current == "inventory",
+            onClick = { navController.navigate("inventory") },
+            label = { Text("Inventory") },
+            icon = { Icon(Icons.Default.List, contentDescription = null) }
+        )
+        NavigationBarItem(
+            selected = current == "sold",
+            onClick = { navController.navigate("sold") },
+            label = { Text("Sold") },
+            icon = { Icon(Icons.Default.History, contentDescription = null) }
+        )
+        NavigationBarItem(
+            selected = current == "transactions",
+            onClick = { navController.navigate("transactions") },
+            label = { Text("Reports") },
+            icon = { Icon(Icons.Default.Receipt, contentDescription = null) }
+        )
     }
 }

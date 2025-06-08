@@ -1,11 +1,10 @@
 package com.example.inventoryapp.ui
 
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.History
-import androidx.compose.material.icons.filled.List
-import androidx.compose.material.icons.filled.Receipt
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.*
-import androidx.compose.runtime.*
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.*
@@ -16,24 +15,22 @@ fun MainScreen() {
     val navController = rememberNavController()
 
     Scaffold(
-        bottomBar = {
-            BottomNavigationBar(navController)
-        }
-    ) { padding ->
-        NavHost(navController, startDestination = "inventory", modifier = Modifier.padding(padding)) {
-
+        bottomBar = { BottomNavBar(navController) }
+    ) { innerPadding: PaddingValues ->
+        NavHost(
+            navController = navController,
+            startDestination = "inventory",
+            modifier = Modifier.padding(innerPadding)
+        ) {
             composable("inventory") {
                 InventoryScreen(navController)
             }
-
             composable("sold") {
                 SoldScreen()
             }
-
             composable("transactions") {
                 TransactionListScreen()
             }
-
             composable(
                 "transaction?sale={sale}&serial={serial}&item={item}",
                 arguments = listOf(
@@ -41,10 +38,10 @@ fun MainScreen() {
                     navArgument("serial") { defaultValue = "" },
                     navArgument("item") { defaultValue = "" }
                 )
-            ) { backStackEntry ->
-                val sale = backStackEntry.arguments?.getString("sale") == "true"
-                val serial = backStackEntry.arguments?.getString("serial") ?: ""
-                val item = backStackEntry.arguments?.getString("item") ?: ""
+            ) { entry ->
+                val sale = entry.arguments?.getString("sale") == "true"
+                val serial = entry.arguments?.getString("serial").orEmpty()
+                val item = entry.arguments?.getString("item").orEmpty()
 
                 TransactionScreen(
                     navController = navController,
@@ -53,9 +50,11 @@ fun MainScreen() {
                     defaultItem = item
                 )
             }
-
+            composable("transaction") {
+                TransactionScreen(navController)
+            }
             composable("scanner") {
-                BarcodeScannerScreen { scannedValue ->
+                BarcodeScannerScreen { _ ->
                     navController.popBackStack()
                 }
             }
@@ -64,29 +63,24 @@ fun MainScreen() {
 }
 
 @Composable
-fun BottomNavigationBar(navController: NavHostController) {
+fun BottomNavBar(navController: NavHostController) {
     val currentRoute = navController.currentBackStackEntryAsState().value?.destination?.route
 
     NavigationBar {
         NavigationBarItem(
             selected = currentRoute == "inventory",
             onClick = { navController.navigate("inventory") },
-            label = { Text("Inventory") },
-            icon = { Icon(Icons.Filled.List, contentDescription = null) }
+            icon = {}, label = { Text("Inventory") }
         )
-
         NavigationBarItem(
             selected = currentRoute == "sold",
             onClick = { navController.navigate("sold") },
-            label = { Text("Sold") },
-            icon = { Icon(Icons.Filled.History, contentDescription = null) }
+            icon = {}, label = { Text("Sold") }
         )
-
         NavigationBarItem(
             selected = currentRoute == "transactions",
             onClick = { navController.navigate("transactions") },
-            label = { Text("Reports") },
-            icon = { Icon(Icons.Filled.Receipt, contentDescription = null) }
+            icon = {}, label = { Text("Reports") }
         )
     }
 }

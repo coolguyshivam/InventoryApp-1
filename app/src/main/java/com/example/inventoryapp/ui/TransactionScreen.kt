@@ -154,88 +154,98 @@ fun TransactionScreen(
         }
 
         Button(
-            onClick = {
-                scope.launch {
-                    error = null
-
-                    if (serialNumber.isBlank() || itemName.isBlank() || amount.isBlank()) {
-                        error = "Please fill all required fields."
-                        return@launch
-                    }
-
-                    val parsedAmount = amount.toIntOrNull()
-                    val parsedQuantity = quantity.toIntOrNull() ?: 1
-                    if (parsedAmount == null) {
-                        error = "Amount must be numeric"
-                        return@launch
-                    }
-
-                    val inventoryRef = db.collection("inventory").document(serialNumber.trim())
-                    val existingDoc = inventoryRef.get().await()
-
-                    if (transactionType == "Purchase" && existingDoc.exists()) {
-                        error = "This serial number already exists."
-                        return@launch
-                    }
-                    if (transactionType == "Sale" && !existingDoc.exists()) {
-                        error = "This serial number does not exist in inventory."
-                        return@launch
-                    }
-
-                    // Upload images
-                    val imageUrls = mutableListOf<String>()
-                    for (uri in imageUris) {
-                        val ref = storage.reference.child("transactions/${UUID.randomUUID()}.jpg")
-                        ref.putFile(uri).await()
-                        val url = ref.downloadUrl.await().toString()
-                        imageUrls.add(url)
-                    }
-
-                    val txnData = mapOf(
-                        "transactionType" to transactionType,
-                        "serialNumber" to serialNumber,
-                        "itemName" to itemName,
-                        "customerName" to customerName,
-                        "phoneNumber" to phoneNumber,
-                        "aadhaarNumber" to aadhaarNumber,
-                        "amount" to parsedAmount,
-                        "quantity" to parsedQuantity,
-                        "timestamp" to System.currentTimeMillis(),
-                        "imageUrls" to imageUrls
-                    )
-
-                    db.collection("transactions").add(txnData).await()
-
-                    if (transactionType == "Purchase") {
-                        inventoryRef.set(
-                            mapOf(
-                                "serialNumber" to serialNumber,
-                                "itemName" to itemName,
-                                "customerName" to customerName,
-                                "phoneNumber" to phoneNumber,
-                                "aadhaarNumber" to aadhaarNumber,
-                                "timestamp" to System.currentTimeMillis(),
-                                "isSold" to false
-                            )
-                        )
-                    } else {
-                        inventoryRef.update("isSold", true)
-                    }
-
-                    // Clear
-                    serialNumber = ""
-                    itemName = ""
-                    customerName = ""
-                    phoneNumber = ""
-                    aadhaarNumber = ""
-                    amount = ""
-                    quantity = "1"
-                    imageUris = emptyList()
-                }
-            },
-            modifier = Modifier.fillMaxWidth()
-        ) {
-            Text("Submit")
-        }
-    }
+			onClick = {
+				scope.launch {
+					error = null
+		
+					if (serialNumber.isBlank() || itemName.isBlank() || amount.isBlank()) {
+						error = "Please fill all required fields."
+						return@launch
+					}
+		
+					val parsedAmount = amount.toIntOrNull()
+					val parsedQuantity = quantity.toIntOrNull() ?: 1
+					if (parsedAmount == null) {
+						error = "Amount must be numeric"
+						return@launch
+					}
+		
+					val inventoryRef = db.collection("inventory").document(serialNumber.trim())
+		
+					try {
+						val existingDoc = inventoryRef.get().await()
+		
+						if (transactionType == "Purchase" && existingDoc.exists()) {
+							error = "This serial number already exists."
+							return@launch
+						}
+						if (transactionType == "Sale" && !existingDoc.exists()) {
+							error = "This serial number does not exist in inventory."
+							return@launch
+						}
+		
+						val imageUrls = mutableListOf<String>()
+						for (uri in imageUris) {
+							try {
+								val ref = storage.reference.child("transactions/${UUID.randomUUID()}.jpg")
+								ref.putFile(uri).await()
+								val url = ref.downloadUrl.await().toString()
+								imageUrls.add(url)
+							} catch (e: Exception) {
+								error = "Image upload failed: ${e.message}"
+								return@launch
+							}
+						}
+		
+						val txnData = mapOf(
+							"transactionType" to transactionType,
+							"serialNumber" to serialNumber.trim(),
+							"itemName" to itemName.trim(),
+							"customerName" to customerName.trim(),
+							"phoneNumber" to phoneNumber.trim(),
+							"aadhaarNumber" to aadhaarNumber.trim(),
+							"amount" to parsedAmount,
+							"quantity" to parsedQuantity,
+							"timestamp" to System.currentTimeMillis(),
+							"imageUrls" to imageUrls
+						)
+		
+						db.collection("transactions").add(txnData).await()
+		
+						if (transactionType == "Purchase") {
+							inventoryRef.set(
+								mapOf(
+									"serialNumber" to serialNumber.trim(),
+									"itemName" to itemName.trim(),
+									"customerName" to customerName.trim(),
+									"phoneNumber" to phoneNumber.trim(),
+									"aadhaarNumber" to aadhaarNumber.trim(),
+									"timestamp" to System.currentTimeMillis(),
+									"isSold" to false
+								)
+							).await()
+						} else {
+							inventoryRef.update("isSold", true).await()
+						}
+		
+						// Reset form
+						serialNumber = ""
+						itemName = ""
+						customerName = ""
+						phoneNumber = ""
+						aadhaarNumber = ""
+						amount = ""
+						quantity = "1"
+						imageUris = emptyList()
+		
+					} catch (e: Exception) {
+						error = "Transaction failed: ${e.message}"
+					}
+				}
+			},
+			modifier = Modifier.fillMaxWidth()
+		) {
+    Text("Submit")
+	}
+	}
 }

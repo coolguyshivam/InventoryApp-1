@@ -1,19 +1,19 @@
 package com.example.inventoryapp.ui
 
-import android.annotation.SuppressLint
+import android.Manifest
 import android.util.Size
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.camera.core.*
 import androidx.camera.lifecycle.ProcessCameraProvider
 import androidx.camera.view.PreviewView
 import androidx.compose.foundation.layout.*
-import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.Text
+import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalLifecycleOwner
 import androidx.compose.ui.viewinterop.AndroidView
-import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat
 import com.google.mlkit.vision.barcode.BarcodeScanning
 import com.google.mlkit.vision.common.InputImage
@@ -23,74 +23,92 @@ import java.util.concurrent.Executors
 fun BarcodeScannerScreen(onScanned: (String) -> Unit) {
     val context = LocalContext.current
     val lifecycleOwner = LocalLifecycleOwner.current
+    var permissionGranted by remember { mutableStateOf(false) }
     var scanning by remember { mutableStateOf(true) }
+
+    val permissionLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.RequestPermission()
+    ) { granted -> permissionGranted = granted }
+
+    LaunchedEffect(Unit) {
+        permissionLauncher.launch(Manifest.permission.CAMERA)
+    }
 
     val previewView = remember { PreviewView(context) }
 
-    LaunchedEffect(Unit) {
-        val cameraProvider = ProcessCameraProvider.getInstance(context).get()
-        val preview = Preview.Builder().build().also {
-            it.setSurfaceProvider(previewView.surfaceProvider)
-        }
+    if (permissionGranted) {
+        LaunchedEffect(Unit) {
+            try {
+                val cameraProvider = ProcessCameraProvider.getInstance(context).get()
+                val preview = Preview.Builder().build().apply {
+                    setSurfaceProvider(previewView.surfaceProvider)
+                }
 
-        val selector = CameraSelector.DEFAULT_BACK_CAMERA
+                val selector = CameraSelector.DEFAULT_BACK_CAMERA
+                val analyzer = ImageAnalysis.Builder()
+                    .setTargetResolution(Size(1280, 720))
+                    .setBackpressureStrategy(ImageAnalysis.STRATEGY_KEEP_ONLY_LATEST)
+                    .build()
 
-        val analyzer = ImageAnalysis.Builder()
-            .setOutputImageFormat(ImageAnalysis.OUTPUT_IMAGE_FORMAT_YUV_420_888)
-            .build()
+                val scanner = BarcodeScanning.getClient()
+                val executor = Executors.newSingleThreadExecutor()
 
-        val scanner = BarcodeScanning.getClient()
-
-        val executor = Executors.newSingleThreadExecutor()
-
-        analyzer.setAnalyzer(executor) { imageProxy ->
-            if (!scanning) {
-                imageProxy.close()
-                return@setAnalyzer
-            }
-
-            val mediaImage = imageProxy.image
-            if (mediaImage != null) {
-                val image = InputImage.fromMediaImage(mediaImage, imageProxy.imageInfo.rotationDegrees)
-                scanner.process(image)
-                    .addOnSuccessListener { barcodes ->
-                        val raw = barcodes.firstOrNull()?.rawValue
-                        if (!raw.isNullOrBlank()) {
-                            scanning = false
-                            onScanned(raw)
-                        }
+                analyzer.setAnalyzer(executor) { imageProxy ->
+                    if (!scanning) {
+                        imageProxy.close()
+                        return@setAnalyzer
                     }
-                    .addOnFailureListener { /* ignore */ }
-                    .addOnCompleteListener {
+
+                    try {
+                        val mediaImage = imageProxy.image
+                        if (mediaImage != null) {
+                            val inputImage = InputImage.fromMediaImage(mediaImage, imageProxy.imageInfo.rotationDegrees)
+                            scanner.process(inputImage)
+                                .addOnSuccessListener { barcodes ->
+                                    val value = barcodes.firstOrNull()?.rawValue
+                                    if (!value.isNullOrEmpty()) {
+                                        scanning = false
+                                        onScanned(value)
+                                    }
+                                }
+                                .addOnFailureListener { /* ignored */ }
+                                .addOnCompleteListener { imageProxy.close() }
+                        } else {
+                            imageProxy.close()
+                        }
+                    } catch (e: Exception) {
                         imageProxy.close()
                     }
-            } else {
-                imageProxy.close()
+                }
+
+                cameraProvider.unbindAll()
+                cameraProvider.bindToLifecycle(
+                    lifecycleOwner,
+                    selector,
+                    preview,
+                    analyzer
+                )
+            } catch (_: Exception) {
+                // Log or handle camera exception
             }
         }
 
-        cameraProvider.unbindAll()
-        cameraProvider.bindToLifecycle(
-            lifecycleOwner,
-            selector,
-            preview,
-            analyzer
-        )
-    }
+        Box(Modifier.fillMaxSize()) {
+            AndroidView(factory = { previewView }, modifier = Modifier.fillMaxSize())
 
-    Box(Modifier.fillMaxSize()) {
-        AndroidView(factory = { previewView }, modifier = Modifier.fillMaxSize())
-
-        if (scanning) {
-            Column(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(top = 16.dp),
-                verticalArrangement = Arrangement.Top
-            ) {
-                Text("Scan IMEI or Barcode...", modifier = Modifier.padding(16.dp))
-                CircularProgressIndicator(modifier = Modifier.padding(16.dp))
+            if (scanning) {
+                Text(
+                    text = "Scanning IMEI...",
+                    modifier = Modifier
+                        .align(Alignment.TopCenter)
+                        .padding(top = 24.dp)
+                )
             }
+        }
+
+    } else {
+        Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+            Text("Camera permission is required to scan.")
         }
     }
 }

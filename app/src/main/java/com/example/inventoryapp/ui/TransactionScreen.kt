@@ -11,7 +11,6 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
@@ -29,142 +28,214 @@ fun TransactionScreen(
     defaultType: String? = null,
     defaultSerial: String? = null,
     defaultItem: String? = null
-)
- {
+) {
     val db = FirebaseFirestore.getInstance()
     val storage = FirebaseStorage.getInstance()
     val scope = rememberCoroutineScope()
-    val context = LocalContext.current
 
     var transactionType by remember { mutableStateOf(defaultType ?: "Sale") }
-	var serialNumber by remember { mutableStateOf(defaultSerial ?: "") }
-	var itemName by remember { mutableStateOf(defaultItem ?: "") }
+    var serialNumber by remember { mutableStateOf(defaultSerial ?: "") }
+    var itemName by remember { mutableStateOf(defaultItem ?: "") }
     var customerName by remember { mutableStateOf("") }
     var phoneNumber by remember { mutableStateOf("") }
     var aadhaarNumber by remember { mutableStateOf("") }
     var amount by remember { mutableStateOf("") }
     var quantity by remember { mutableStateOf("1") }
+    var imageUris by remember { mutableStateOf<List<Uri>>(emptyList()) }
     var error by remember { mutableStateOf<String?>(null) }
 
-    val imageUris = remember { mutableStateListOf<Uri>() }
-    val imageLauncher = rememberLauncherForActivityResult(ActivityResultContracts.GetMultipleContents()) { uris ->
-        if (uris != null && imageUris.size + uris.size <= 3) {
-            imageUris.addAll(uris)
+    val imagePicker = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.GetMultipleContents()
+    ) { uris ->
+        if (uris != null) {
+            imageUris = (imageUris + uris).take(3)
         }
     }
 
-    Column(modifier = Modifier
-        .padding(16.dp)
-        .verticalScroll(rememberScrollState())) {
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .verticalScroll(rememberScrollState())
+            .padding(16.dp)
+    ) {
 
-        Row {
-            Button(onClick = { transactionType = "Purchase" }, colors = ButtonDefaults.buttonColors(if (transactionType == "Purchase") Color.Green else Color.Gray)) {
-                Text("Purchase")
-            }
-            Spacer(Modifier.width(8.dp))
-            Button(onClick = { transactionType = "Sale" }, colors = ButtonDefaults.buttonColors(if (transactionType == "Sale") Color.Red else Color.Gray)) {
-                Text("Sale")
+        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            listOf("Purchase", "Sale").forEach { type ->
+                OutlinedButton(
+                    onClick = { transactionType = type },
+                    modifier = Modifier.weight(1f),
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = if (transactionType == type)
+                            MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.surface
+                    )
+                ) {
+                    Text(type)
+                }
             }
         }
-
-        Spacer(Modifier.height(16.dp))
-
-        OutlinedTextField(value = serialNumber, onValueChange = { serialNumber = it }, label = { Text("Serial Number") })
-        OutlinedTextField(value = itemName, onValueChange = { itemName = it }, label = { Text("Item Name") })
-        OutlinedTextField(value = customerName, onValueChange = { customerName = it }, label = { Text("Customer Name") })
-        OutlinedTextField(value = phoneNumber, onValueChange = { phoneNumber = it }, label = { Text("Phone Number") }, keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Phone))
-        OutlinedTextField(value = aadhaarNumber, onValueChange = { aadhaarNumber = it }, label = { Text("Aadhaar Number") }, keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number))
-        OutlinedTextField(value = amount, onValueChange = { amount = it.filter { it.isDigit() } }, label = { Text("Amount") }, keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number))
-        OutlinedTextField(value = quantity, onValueChange = { quantity = it.filter { it.isDigit() } }, label = { Text("Quantity") }, keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number))
 
         Spacer(Modifier.height(12.dp))
-        Button(onClick = { imageLauncher.launch("image/*") }) {
-            Text("Attach Images (${imageUris.size}/3)")
-        }
 
-        imageUris.forEach {
-            Image(painter = rememberAsyncImagePainter(it), contentDescription = null, modifier = Modifier
-                .fillMaxWidth()
-                .height(120.dp)
-                .padding(vertical = 4.dp))
-        }
+        OutlinedTextField(
+            value = serialNumber,
+            onValueChange = { serialNumber = it.trim() },
+            label = { Text("Serial Number") },
+            modifier = Modifier.fillMaxWidth()
+        )
 
-        Spacer(Modifier.height(16.dp))
+        OutlinedTextField(
+            value = itemName,
+            onValueChange = { itemName = it },
+            label = { Text("Item Name") },
+            modifier = Modifier.fillMaxWidth()
+        )
 
-        error?.let {
-            Text(it, color = Color.Red)
-        }
+        OutlinedTextField(
+            value = customerName,
+            onValueChange = { customerName = it },
+            label = { Text("Customer Name") },
+            modifier = Modifier.fillMaxWidth()
+        )
 
-        Button(onClick = {
-            scope.launch {
-                error = null
-                if (serialNumber.isBlank() || itemName.isBlank() || amount.isBlank()) {
-                    error = "Please fill all required fields."
-                    return@launch
-                }
+        OutlinedTextField(
+            value = phoneNumber,
+            onValueChange = { phoneNumber = it },
+            label = { Text("Phone Number") },
+            keyboardOptions = KeyboardOptions.Default.copy(keyboardType = KeyboardType.Number),
+            modifier = Modifier.fillMaxWidth()
+        )
 
-                val inventoryRef = db.collection("inventory").document(serialNumber)
-                val doc = inventoryRef.get().await()
+        OutlinedTextField(
+            value = aadhaarNumber,
+            onValueChange = { aadhaarNumber = it },
+            label = { Text("Aadhaar Number") },
+            keyboardOptions = KeyboardOptions.Default.copy(keyboardType = KeyboardType.Number),
+            modifier = Modifier.fillMaxWidth()
+        )
 
-                if (transactionType == "Purchase" && doc.exists()) {
-                    error = "Item with this serial number already exists in inventory."
-                    return@launch
-                }
+        OutlinedTextField(
+            value = amount,
+            onValueChange = { amount = it },
+            label = { Text("Amount (₹)") },
+            keyboardOptions = KeyboardOptions.Default.copy(keyboardType = KeyboardType.Number),
+            modifier = Modifier.fillMaxWidth()
+        )
 
-                if (transactionType == "Sale" && !doc.exists()) {
-                    error = "This item is not available in inventory."
-                    return@launch
-                }
+        OutlinedTextField(
+            value = quantity,
+            onValueChange = { quantity = it },
+            label = { Text("Quantity") },
+            keyboardOptions = KeyboardOptions.Default.copy(keyboardType = KeyboardType.Number),
+            modifier = Modifier.fillMaxWidth()
+        )
 
-                val imageUrls = mutableListOf<String>()
-                for (uri in imageUris) {
-                    val ref = storage.reference.child("transactions/${UUID.randomUUID()}.jpg")
-                    ref.putFile(uri).await()
-                    val url = ref.downloadUrl.await().toString()
-                    imageUrls.add(url)
-                }
-
-                val txnData = mapOf(
-                    "transactionType" to transactionType,
-                    "serialNumber" to serialNumber.trim(),
-                    "itemName" to itemName.trim(),
-                    "customerName" to customerName.trim(),
-                    "phoneNumber" to phoneNumber.trim(),
-                    "aadhaarNumber" to aadhaarNumber.trim(),
-                    "amount" to amount.toIntOrNull(),
-                    "quantity" to quantity.toIntOrNull(),
-                    "timestamp" to System.currentTimeMillis(),
-                    "imageUrls" to imageUrls
-                )
-
-                db.collection("transactions").add(txnData).await()
-
-                if (transactionType == "Purchase") {
-                    inventoryRef.set(
-                        mapOf(
-                            "serialNumber" to serialNumber.trim(),
-                            "itemName" to itemName.trim(),
-                            "customerName" to customerName.trim(),
-                            "timestamp" to System.currentTimeMillis(),
-                            "isSold" to false
-                        )
+        // Preview images
+        if (imageUris.isNotEmpty()) {
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                imageUris.forEach {
+                    Image(
+                        painter = rememberAsyncImagePainter(it),
+                        contentDescription = null,
+                        modifier = Modifier.size(80.dp)
                     )
-                } else if (transactionType == "Sale") {
-                    inventoryRef.update("isSold", true)
                 }
-
-                // reset
-                serialNumber = ""
-                itemName = ""
-                customerName = ""
-                phoneNumber = ""
-                aadhaarNumber = ""
-                amount = ""
-                quantity = "1"
-                imageUris.clear()
             }
-        }, modifier = Modifier.fillMaxWidth()) {
+        }
+
+        TextButton(
+            onClick = { imagePicker.launch("image/*") },
+            modifier = Modifier.padding(vertical = 8.dp)
+        ) {
+            Text("Attach Photos (max 3)")
+        }
+
+        if (error != null) {
+            Text(error ?: "", color = MaterialTheme.colorScheme.error)
+        }
+
+        Button(
+            onClick = {
+                scope.launch {
+                    error = null
+
+                    if (serialNumber.isBlank() || itemName.isBlank() || amount.isBlank()) {
+                        error = "Please fill all required fields."
+                        return@launch
+                    }
+
+                    val parsedAmount = amount.toIntOrNull()
+                    val parsedQuantity = quantity.toIntOrNull() ?: 1
+                    if (parsedAmount == null) {
+                        error = "Amount must be numeric"
+                        return@launch
+                    }
+
+                    val inventoryRef = db.collection("inventory").document(serialNumber.trim())
+                    val existingDoc = inventoryRef.get().await()
+
+                    if (transactionType == "Purchase" && existingDoc.exists()) {
+                        error = "This serial number already exists."
+                        return@launch
+                    }
+                    if (transactionType == "Sale" && !existingDoc.exists()) {
+                        error = "This serial number does not exist in inventory."
+                        return@launch
+                    }
+
+                    // Upload images
+                    val imageUrls = mutableListOf<String>()
+                    for (uri in imageUris) {
+                        val ref = storage.reference.child("transactions/${UUID.randomUUID()}.jpg")
+                        ref.putFile(uri).await()
+                        val url = ref.downloadUrl.await().toString()
+                        imageUrls.add(url)
+                    }
+
+                    val txnData = mapOf(
+                        "transactionType" to transactionType,
+                        "serialNumber" to serialNumber,
+                        "itemName" to itemName,
+                        "customerName" to customerName,
+                        "phoneNumber" to phoneNumber,
+                        "aadhaarNumber" to aadhaarNumber,
+                        "amount" to parsedAmount,
+                        "quantity" to parsedQuantity,
+                        "timestamp" to System.currentTimeMillis(),
+                        "imageUrls" to imageUrls
+                    )
+
+                    db.collection("transactions").add(txnData).await()
+
+                    if (transactionType == "Purchase") {
+                        inventoryRef.set(
+                            mapOf(
+                                "serialNumber" to serialNumber,
+                                "itemName" to itemName,
+                                "customerName" to customerName,
+                                "phoneNumber" to phoneNumber,
+                                "aadhaarNumber" to aadhaarNumber,
+                                "timestamp" to System.currentTimeMillis(),
+                                "isSold" to false
+                            )
+                        )
+                    } else {
+                        inventoryRef.update("isSold", true)
+                    }
+
+                    // Clear
+                    serialNumber = ""
+                    itemName = ""
+                    customerName = ""
+                    phoneNumber = ""
+                    aadhaarNumber = ""
+                    amount = ""
+                    quantity = "1"
+                    imageUris = emptyList()
+                }
+            },
+            modifier = Modifier.fillMaxWidth()
+        ) {
             Text("Submit")
         }
     }
- }
+}

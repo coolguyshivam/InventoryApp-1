@@ -1,14 +1,19 @@
 package com.example.inventoryapp.ui
 
+import android.annotation.SuppressLint
 import android.util.Size
 import androidx.camera.core.*
 import androidx.camera.lifecycle.ProcessCameraProvider
 import androidx.camera.view.PreviewView
+import androidx.compose.foundation.layout.*
+import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.Text
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalLifecycleOwner
 import androidx.compose.ui.viewinterop.AndroidView
+import androidx.core.content.ContextCompat
 import com.google.mlkit.vision.barcode.BarcodeScanning
 import com.google.mlkit.vision.common.InputImage
 import java.util.concurrent.Executors
@@ -17,34 +22,44 @@ import java.util.concurrent.Executors
 fun BarcodeScannerScreen(onScanned: (String) -> Unit) {
     val context = LocalContext.current
     val lifecycleOwner = LocalLifecycleOwner.current
-    val previewView = remember { PreviewView(context) }
-    val executor = remember { Executors.newSingleThreadExecutor() }
+    var scanning by remember { mutableStateOf(true) }
 
-    AndroidView(factory = { previewView }, modifier = Modifier)
+    val previewView = remember { PreviewView(context) }
 
     LaunchedEffect(Unit) {
         val cameraProvider = ProcessCameraProvider.getInstance(context).get()
-
-        val preview = Preview.Builder().build().apply {
-            setSurfaceProvider(previewView.surfaceProvider)
+        val preview = Preview.Builder().build().also {
+            it.setSurfaceProvider(previewView.surfaceProvider)
         }
 
-        val barcodeScanner = BarcodeScanning.getClient()
-        val imageAnalyzer = ImageAnalysis.Builder()
-            .setTargetResolution(Size(1280, 720))
-            .setBackpressureStrategy(ImageAnalysis.STRATEGY_KEEP_ONLY_LATEST)
+        val selector = CameraSelector.DEFAULT_BACK_CAMERA
+
+        val analyzer = ImageAnalysis.Builder()
+            .setOutputImageFormat(ImageAnalysis.OUTPUT_IMAGE_FORMAT_YUV_420_888)
             .build()
 
-        imageAnalyzer.setAnalyzer(executor) { imageProxy ->
+        val scanner = BarcodeScanning.getClient()
+
+        val executor = Executors.newSingleThreadExecutor()
+
+        analyzer.setAnalyzer(executor) { imageProxy ->
+            if (!scanning) {
+                imageProxy.close()
+                return@setAnalyzer
+            }
+
             val mediaImage = imageProxy.image
             if (mediaImage != null) {
                 val image = InputImage.fromMediaImage(mediaImage, imageProxy.imageInfo.rotationDegrees)
-                barcodeScanner.process(image)
+                scanner.process(image)
                     .addOnSuccessListener { barcodes ->
-                        barcodes.firstOrNull()?.rawValue?.let { result ->
-                            onScanned(result)
+                        val raw = barcodes.firstOrNull()?.rawValue
+                        if (!raw.isNullOrBlank()) {
+                            scanning = false
+                            onScanned(raw)
                         }
                     }
+                    .addOnFailureListener { /* ignore */ }
                     .addOnCompleteListener {
                         imageProxy.close()
                     }
@@ -53,14 +68,28 @@ fun BarcodeScannerScreen(onScanned: (String) -> Unit) {
             }
         }
 
-        val cameraSelector = CameraSelector.DEFAULT_BACK_CAMERA
-
         cameraProvider.unbindAll()
         cameraProvider.bindToLifecycle(
             lifecycleOwner,
-            cameraSelector,
+            selector,
             preview,
-            imageAnalyzer
+            analyzer
         )
+    }
+
+    Box(Modifier.fillMaxSize()) {
+        AndroidView(factory = { previewView }, modifier = Modifier.fillMaxSize())
+
+        if (scanning) {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(top = 16.dp),
+                verticalArrangement = Arrangement.Top
+            ) {
+                Text("Scan IMEI or Barcode...", modifier = Modifier.padding(16.dp))
+                CircularProgressIndicator(modifier = Modifier.padding(16.dp))
+            }
+        }
     }
 }

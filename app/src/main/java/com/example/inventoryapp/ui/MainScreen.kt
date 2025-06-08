@@ -54,7 +54,7 @@ fun MainScreen() {
                 TransactionScreen(navController)
             }
             composable("scanner") {
-                BarcodeScannerScreen { _ ->
+                BarcodeScannerScreen { scannedValue ->
                     navController.popBackStack()
                 }
             }

@@ -186,8 +186,8 @@ fun TransactionScreen(
 		
 						val imageUrls = mutableListOf<String>()
 						for (uri in imageUris) {
-							try {
 								val ref = storage.reference.child("transactions/${UUID.randomUUID()}.jpg")
+							try {
 								ref.putFile(uri).await()
 								val url = ref.downloadUrl.await().toString()
 								imageUrls.add(url)

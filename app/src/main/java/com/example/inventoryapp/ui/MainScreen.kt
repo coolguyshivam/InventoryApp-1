@@ -25,9 +25,6 @@ fun MainScreen() {
             composable("inventory") {
                 InventoryScreen(navController)
             }
-            composable("sold") {
-                SoldScreen()
-            }
             composable("transactions") {
                 TransactionListScreen()
             }
@@ -71,11 +68,6 @@ fun BottomNavBar(navController: NavHostController) {
             selected = currentRoute == "inventory",
             onClick = { navController.navigate("inventory") },
             icon = {}, label = { Text("Inventory") }
-        )
-        NavigationBarItem(
-            selected = currentRoute == "sold",
-            onClick = { navController.navigate("sold") },
-            icon = {}, label = { Text("Sold") }
         )
         NavigationBarItem(
             selected = currentRoute == "transactions",

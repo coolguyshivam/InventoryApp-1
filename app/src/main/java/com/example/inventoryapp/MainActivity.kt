@@ -6,6 +6,7 @@ import androidx.activity.compose.setContent
 import androidx.navigation.compose.rememberNavController
 import com.example.inventoryapp.ui.MainScreen
 import com.example.inventoryapp.ui.theme.InventoryAppTheme
+import com.example.inventoryapp.ui.InventoryScreen
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {

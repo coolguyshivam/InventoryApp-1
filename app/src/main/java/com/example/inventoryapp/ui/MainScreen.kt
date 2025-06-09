@@ -1,78 +1,50 @@
 package com.example.inventoryapp.ui
 
-import androidx.compose.foundation.layout.PaddingValues
-import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.*
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Inventory
+import androidx.compose.material.icons.filled.List
+import androidx.compose.material.icons.filled.ShoppingCart
 import androidx.compose.material3.*
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
+import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.unit.dp
 import androidx.navigation.NavHostController
-import androidx.navigation.compose.*
-import androidx.navigation.navArgument
 
 @Composable
-fun MainScreen() {
-    val navController = rememberNavController()
+fun MainScreen(navController: NavHostController) {
+    var selectedTab by remember { mutableStateOf(0) }
 
-    Scaffold(
-        bottomBar = { BottomNavBar(navController) }
-    ) { innerPadding: PaddingValues ->
-        NavHost(
-            navController = navController,
-            startDestination = "inventory",
-            modifier = Modifier.padding(innerPadding)
+    val tabs = listOf(
+        TabItem("Inventory", Icons.Filled.Inventory),
+        TabItem("Transaction", Icons.Filled.ShoppingCart),
+        TabItem("Reports", Icons.Filled.List),
+    )
+
+    Column(modifier = Modifier.fillMaxSize()) {
+        TabRow(
+            selectedTabIndex = selectedTab,
+            modifier = Modifier.fillMaxWidth()
         ) {
-            composable("inventory") {
-                InventoryScreen(navController)
-            }
-            composable("transactions") {
-                TransactionListScreen()
-            }
-            composable(
-                "transaction?sale={sale}&serial={serial}&item={item}",
-                arguments = listOf(
-                    navArgument("sale") { defaultValue = "false" },
-                    navArgument("serial") { defaultValue = "" },
-                    navArgument("item") { defaultValue = "" }
+            tabs.forEachIndexed { index, tab ->
+                Tab(
+                    selected = selectedTab == index,
+                    onClick = { selectedTab = index },
+                    icon = { Icon(tab.icon, contentDescription = tab.label) },
+                    text = { Text(tab.label) }
                 )
-            ) { entry ->
-                val sale = entry.arguments?.getString("sale") == "true"
-                val serial = entry.arguments?.getString("serial").orEmpty()
-                val item = entry.arguments?.getString("item").orEmpty()
+            }
+        }
 
-                TransactionScreen(
-                    navController = navController,
-                    defaultType = if (sale) "Sale" else "Purchase",
-                    defaultSerial = serial,
-                    defaultItem = item
-                )
-            }
-            composable("transaction") {
-                TransactionScreen(navController)
-            }
-            composable("scanner") {
-                BarcodeScannerScreen { scannedValue ->
-                    navController.popBackStack()
-                }
-            }
+        Spacer(modifier = Modifier.height(10.dp))
+
+        when (selectedTab) {
+            0 -> InventoryScreen(navController)
+            1 -> TransactionScreen(navController)
+            2 -> TransactionListScreen()
         }
     }
 }
 
-@Composable
-fun BottomNavBar(navController: NavHostController) {
-    val currentRoute = navController.currentBackStackEntryAsState().value?.destination?.route
-
-    NavigationBar {
-        NavigationBarItem(
-            selected = currentRoute == "inventory",
-            onClick = { navController.navigate("inventory") },
-            icon = {}, label = { Text("Inventory") }
-        )
-        NavigationBarItem(
-            selected = currentRoute == "transactions",
-            onClick = { navController.navigate("transactions") },
-            icon = {}, label = { Text("Reports") }
-        )
-    }
-}
+data class TabItem(val label: String, val icon: ImageVector)

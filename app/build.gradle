@@ -42,7 +42,8 @@ android {
 
 dependencies {
     // Jetpack Compose
-
+	implementation(platform("com.google.firebase:firebase-bom:33.15.0"))
+	implementation("com.google.firebase:firebase-analytics")
 	implementation("androidx.activity:activity-ktx:1.7.2")
 	implementation("androidx.lifecycle:lifecycle-runtime-ktx:2.6.1")
     implementation platform("androidx.compose:compose-bom:2023.10.01")

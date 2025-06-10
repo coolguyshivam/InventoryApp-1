@@ -1,48 +1,40 @@
 package com.example.inventoryapp.ui
 
-import androidx.compose.material.icons.Icons
+//import androidx.compose.material.icons.Icons
 // import androidx.compose.material.icons.filled.Inventory
-import androidx.compose.material.icons.filled.List
+//import androidx.compose.material.icons.filled.List
 import androidx.compose.material.icons.filled.ShoppingCart
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.navigation.NavHostController
+import androidx.compose.ui.unit.dp
 import com.example.inventoryapp.ui.InventoryScreen
 import com.example.inventoryapp.ui.TransactionScreen
 import com.example.inventoryapp.ui.TransactionListScreen
-import com.example.inventoryapp.model.TransactionRecord
 
 @Composable
-fun MainScreen(navController: NavHostController) {
+fun MainScreen() {
     var selectedTab by remember { mutableStateOf(0) }
+    val tabTitles = listOf("Inventory", "Transaction", "Reports")
 
-    val tabs = listOf(
-        TabItem("Inventory", Icons.Filled.Inventory),
-        TabItem("Transaction", Icons.Filled.ShoppingCart),
-        TabItem("Reports", Icons.Filled.List)
-    )
-
-    Scaffold(
-        topBar = {
-            TabRow(selectedTabIndex = selectedTab) {
-                tabs.forEachIndexed { index, tab ->
-                    Tab(
-                        selected = selectedTab == index,
-                        onClick = { selectedTab = index },
-                        icon = { Icon(tab.icon, contentDescription = tab.label) },
-                        text = { Text(tab.label) }
-                    )
-                }
+    Column(modifier = Modifier.fillMaxSize().padding(16.dp)) {
+        TabRow(selectedTabIndex = selectedTab) {
+            tabTitles.forEachIndexed { index, title ->
+                Tab(
+                    selected = selectedTab == index,
+                    onClick = { selectedTab = index },
+                    text = { Text(title) }
+                )
             }
         }
-    ) { innerPadding ->
+
+        Spacer(modifier = Modifier.height(12.dp))
+
         when (selectedTab) {
-            0 -> InventoryScreen(navController)
-            1 -> TransactionScreen(navController)
+            0 -> InventoryScreen()
+            1 -> TransactionScreen()
             2 -> TransactionListScreen()
         }
     }
 }
-
-data class TabItem(val label: String, val icon: androidx.compose.ui.graphics.vector.ImageVector)

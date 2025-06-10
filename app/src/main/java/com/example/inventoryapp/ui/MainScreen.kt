@@ -1,9 +1,9 @@
 package com.example.inventoryapp.ui
 
-// import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.Icons
 // import androidx.compose.material.icons.filled.Inventory
-// import androidx.compose.material.icons.filled.List
-// import androidx.compose.material.icons.filled.ShoppingCart
+import androidx.compose.material.icons.filled.List
+import androidx.compose.material.icons.filled.ShoppingCart
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier

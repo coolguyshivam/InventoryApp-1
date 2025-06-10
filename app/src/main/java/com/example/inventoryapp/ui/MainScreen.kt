@@ -1,24 +1,21 @@
 package com.example.inventoryapp.ui
 
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Home // Use Home as a placeholder if Inventory is missing
-import androidx.compose.material.icons.filled.List
+import androidx.compose.material.icons.filled.Home // Placeholder for Inventory if needed
 import androidx.compose.material.icons.filled.ShoppingCart
+import androidx.compose.material.icons.automirrored.filled.List // Use AutoMirrored version for RTL support
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.navigation.NavHostController
-import com.example.inventoryapp.ui.InventoryScreen
-import com.example.inventoryapp.ui.TransactionScreen
-import com.example.inventoryapp.ui.TransactionListScreen
 
 @Composable
 fun MainScreen(navController: NavHostController) {
     var selectedTab by remember { mutableStateOf(0) }
 
     val tabs = listOf(
-        TabItem("Inventory", Icons.Filled.Home), // Use Home icon as a placeholder
+        TabItem("Inventory", Icons.Filled.Home),
         TabItem("Transaction", Icons.Filled.ShoppingCart),
-        TabItem("Reports", Icons.Filled.List)
+        TabItem("Reports", Icons.AutoMirrored.Filled.List) // Updated icon
     )
 
     Scaffold(
@@ -34,7 +31,7 @@ fun MainScreen(navController: NavHostController) {
                 }
             }
         }
-    ) { innerPadding ->
+    ) { _ -> // Renamed unused parameter to _
         when (selectedTab) {
             0 -> InventoryScreen(navController)
             1 -> TransactionScreen(navController)

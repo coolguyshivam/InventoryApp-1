@@ -7,28 +7,45 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import com.google.firebase.firestore.FirebaseFirestore
-import kotlinx.coroutines.tasks.await
+import com.google.firebase.firestore.Query
+import com.example.inventoryapp.model.InventoryItem
+import com.example.inventoryapp.ui.components.InventoryCard
 
 @Composable
 fun SoldScreen() {
-    val db = FirebaseFirestore.getInstance()
-    var soldItems by remember { mutableStateOf<List<InventoryItem>>(emptyList()) }
+    val soldItems = remember { mutableStateListOf<InventoryItem>() }
 
     LaunchedEffect(Unit) {
-        val result = db.collection("inventory")
-            .whereEqualTo("isSold", true)
-            .get()
-            .await()
-
-        soldItems = result.documents.mapNotNull { it.toObject(InventoryItem::class.java) }
-            .sortedByDescending { it.timestamp }
+        FirebaseFirestore.getInstance()
+            .collection("transactions")
+            .whereEqualTo("type", "Sale")
+            .orderBy("timestamp", Query.Direction.DESCENDING)
+            .addSnapshotListener { snapshot, _ ->
+                soldItems.clear()
+                snapshot?.forEach { doc ->
+                    soldItems.add(
+                        InventoryItem(
+                            id = doc.id,
+                            model = doc.getString("model") ?: "",
+                            serial = doc.getString("serial") ?: "",
+                            phone = doc.getString("phone") ?: "",
+                            aadhaar = doc.getString("aadhaar") ?: "",
+                            description = doc.getString("description") ?: "",
+                            date = doc.getString("date") ?: "",
+                            imageUrls = doc.get("imageUrls") as? List<String> ?: emptyList(),
+                            timestamp = doc.getLong("timestamp") ?: 0L
+                        )
+                    )
+                }
+            }
     }
 
-    Column(modifier = Modifier.fillMaxSize().padding(8.dp)) {
+    Column(modifier = Modifier.fillMaxSize().padding(12.dp)) {
+        Text("Sold Items", style = MaterialTheme.typography.titleLarge)
+        Spacer(modifier = Modifier.height(8.dp))
         LazyColumn {
             items(soldItems.size) { index ->
-                val item = soldItems[index]
-                InventoryCard(item = item, onSell = {})
+                InventoryCard(soldItems[index])
             }
         }
     }

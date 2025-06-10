@@ -5,8 +5,7 @@ import android.view.ViewGroup
 import androidx.camera.core.*
 import androidx.camera.lifecycle.ProcessCameraProvider
 import androidx.camera.view.PreviewView
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
@@ -18,11 +17,11 @@ import com.google.mlkit.vision.barcode.BarcodeScanning
 import com.google.mlkit.vision.common.InputImage
 
 @Composable
-fun BarcodeScannerScreen(navController: NavHostController, onScanned: (String) -> Unit = {}) {
+fun BarcodeScannerScreen(navController: NavHostController) {
     val context = LocalContext.current
     val lifecycleOwner = LocalLifecycleOwner.current
 
-    DisposableEffect(Unit) {
+    LaunchedEffect(Unit) {
         val cameraProviderFuture = ProcessCameraProvider.getInstance(context)
         cameraProviderFuture.addListener({
             val cameraProvider = cameraProviderFuture.get()
@@ -33,11 +32,13 @@ fun BarcodeScannerScreen(navController: NavHostController, onScanned: (String) -
             }
 
             val analyzer = ImageAnalysis.Builder()
-                .setTargetResolution(Size(1280, 720)) // deprecated, but functional
+                .setTargetResolution(Size(1280, 720))
                 .build()
                 .apply {
                     setAnalyzer(ContextCompat.getMainExecutor(context)) { imageProxy ->
-                        processImageProxy(imageProxy, onScanned)
+                        processImageProxy(imageProxy) { scannedValue ->
+                            navController.navigate("transaction?serial=$scannedValue")
+                        }
                     }
                 }
 
@@ -46,8 +47,6 @@ fun BarcodeScannerScreen(navController: NavHostController, onScanned: (String) -
                 lifecycleOwner, CameraSelector.DEFAULT_BACK_CAMERA, preview, analyzer
             )
         }, ContextCompat.getMainExecutor(context))
-
-        onDispose { }
     }
 
     Box(modifier = Modifier.fillMaxSize()) {
@@ -69,16 +68,12 @@ private fun processImageProxy(imageProxy: ImageProxy, onScanned: (String) -> Uni
     val mediaImage = imageProxy.image
     if (mediaImage != null) {
         val image = InputImage.fromMediaImage(mediaImage, imageProxy.imageInfo.rotationDegrees)
-        BarcodeScanning.getClient()
-            .process(image)
+        BarcodeScanning.getClient().process(image)
             .addOnSuccessListener { barcodes ->
                 for (barcode in barcodes) {
-                    barcode.rawValue?.let { value ->
-                        onScanned(value)
-                    }
+                    barcode.rawValue?.let { onScanned(it) }
                 }
             }
-            .addOnFailureListener { }
             .addOnCompleteListener { imageProxy.close() }
     } else {
         imageProxy.close()

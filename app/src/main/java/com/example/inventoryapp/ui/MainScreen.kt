@@ -15,11 +15,7 @@ fun MainScreen(navController: NavHostController) {
     var selectedTab by remember { mutableStateOf(0) }
     val tabTitles = listOf("Inventory", "Transaction", "Reports")
 
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .padding(12.dp)
-    ) {
+    Column(modifier = Modifier.fillMaxSize().padding(12.dp)) {
         TabRow(selectedTabIndex = selectedTab) {
             tabTitles.forEachIndexed { index, title ->
                 Tab(
@@ -29,13 +25,11 @@ fun MainScreen(navController: NavHostController) {
                 )
             }
         }
-
         Spacer(modifier = Modifier.height(8.dp))
-
         when (selectedTab) {
-            0 -> InventoryScreen(navController = navController)
-            1 -> TransactionScreen(navController = navController)
-            2 -> TransactionListScreen(navController = navController)
+            0 -> InventoryScreen(navController)
+            1 -> TransactionScreen(navController)
+            2 -> TransactionListScreen(navController)
         }
     }
 }

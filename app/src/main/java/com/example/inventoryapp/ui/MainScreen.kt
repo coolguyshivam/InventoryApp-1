@@ -7,6 +7,9 @@ import androidx.compose.material.icons.filled.ShoppingCart
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.navigation.NavHostController
+import com.example.inventoryapp.ui.InventoryScreen
+import com.example.inventoryapp.ui.TransactionScreen
+import com.example.inventoryapp.ui.TransactionListScreen
 
 @Composable
 fun MainScreen(navController: NavHostController) {

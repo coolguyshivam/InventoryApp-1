@@ -11,7 +11,7 @@ import androidx.navigation.NavHostController
 import com.example.inventoryapp.ui.InventoryScreen
 import com.example.inventoryapp.ui.TransactionScreen
 import com.example.inventoryapp.ui.TransactionListScreen
-import com.example.inventoryapp.model.Inventory
+import com.example.inventoryapp.ui.InventoryScreen
 
 @Composable
 fun MainScreen(navController: NavHostController) {

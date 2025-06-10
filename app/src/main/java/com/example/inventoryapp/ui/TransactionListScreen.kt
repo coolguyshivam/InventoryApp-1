@@ -18,6 +18,7 @@ import com.example.inventoryapp.model.TransactionRecord
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.Query
 import kotlinx.coroutines.tasks.await
+import com.example.inventoryapp.ui.InventoryScreen
 
 @Composable
 fun TransactionListScreen() {

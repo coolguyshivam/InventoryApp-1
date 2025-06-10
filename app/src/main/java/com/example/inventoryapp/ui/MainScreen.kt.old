@@ -1,14 +1,14 @@
 package com.example.inventoryapp.ui
 
-//import androidx.compose.material.icons.Icons
-// import androidx.compose.material.icons.filled.Inventory
-//import androidx.compose.material.icons.filled.List
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Inventory
+import androidx.compose.material.icons.filled.List
 import androidx.compose.material.icons.filled.ShoppingCart
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
-import androidx.navigation.NavHostController
 import androidx.compose.ui.unit.dp
+import androidx.navigation.NavHostController
 import com.example.inventoryapp.ui.InventoryScreen
 import com.example.inventoryapp.ui.TransactionScreen
 import com.example.inventoryapp.ui.TransactionListScreen
@@ -25,7 +25,15 @@ fun MainScreen(navController: NavHostController) {
 
     Scaffold(
         topBar = {
-            TabRow(selectedTabIndex = selectedTab) {
+            TabRow(
+                selectedTabIndex = selectedTab,
+                indicator = { tabPositions ->
+                    TabRowDefaults.Indicator(
+                        Modifier.tabIndicatorOffset(tabPositions[selectedTab]),
+                        color = MaterialTheme.colorScheme.primary
+                    )
+                }
+            ) {
                 tabs.forEachIndexed { index, tab ->
                     Tab(
                         selected = selectedTab == index,

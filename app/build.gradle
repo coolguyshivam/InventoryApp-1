@@ -45,7 +45,7 @@ dependencies {
     implementation "androidx.navigation:navigation-compose:2.7.6"
     debugImplementation "androidx.compose.ui:ui-tooling"
     debugImplementation "androidx.compose.ui:ui-test-manifest"
-
+	implementation 'com.google.guava:guava:31.1-android'
     // Firebase
     implementation platform("com.google.firebase:firebase-bom:33.15.0")
     implementation 'com.google.firebase:firebase-firestore-ktx'

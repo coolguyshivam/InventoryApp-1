@@ -1,116 +1,86 @@
 package com.example.inventoryapp.ui
 
-import android.Manifest
 import android.util.Size
-import androidx.activity.compose.rememberLauncherForActivityResult
-import androidx.activity.result.contract.ActivityResultContracts
+import android.view.ViewGroup
 import androidx.camera.core.*
 import androidx.camera.lifecycle.ProcessCameraProvider
 import androidx.camera.view.PreviewView
-import androidx.compose.foundation.layout.*
-import androidx.compose.material3.*
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalLifecycleOwner
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.core.content.ContextCompat
-import androidx.compose.ui.unit.dp
-import androidx.compose.ui.Alignment
+import androidx.navigation.NavHostController
 import com.google.mlkit.vision.barcode.BarcodeScanning
 import com.google.mlkit.vision.common.InputImage
-import java.util.concurrent.Executors
 
 @Composable
-fun BarcodeScannerScreen(onScanned: (String) -> Unit) {
+fun BarcodeScannerScreen(navController: NavHostController, onScanned: (String) -> Unit = {}) {
     val context = LocalContext.current
     val lifecycleOwner = LocalLifecycleOwner.current
-    var permissionGranted by remember { mutableStateOf(false) }
-    var scanning by remember { mutableStateOf(true) }
 
-    val permissionLauncher = rememberLauncherForActivityResult(
-        contract = ActivityResultContracts.RequestPermission()
-    ) { granted -> permissionGranted = granted }
+    DisposableEffect(Unit) {
+        val cameraProviderFuture = ProcessCameraProvider.getInstance(context)
+        cameraProviderFuture.addListener({
+            val cameraProvider = cameraProviderFuture.get()
+            val previewView = PreviewView(context)
 
-    LaunchedEffect(Unit) {
-        permissionLauncher.launch(Manifest.permission.CAMERA)
+            val preview = Preview.Builder().build().apply {
+                setSurfaceProvider(previewView.surfaceProvider)
+            }
+
+            val analyzer = ImageAnalysis.Builder()
+                .setTargetResolution(Size(1280, 720)) // deprecated, but functional
+                .build()
+                .apply {
+                    setAnalyzer(ContextCompat.getMainExecutor(context)) { imageProxy ->
+                        processImageProxy(imageProxy, onScanned)
+                    }
+                }
+
+            cameraProvider.unbindAll()
+            cameraProvider.bindToLifecycle(
+                lifecycleOwner, CameraSelector.DEFAULT_BACK_CAMERA, preview, analyzer
+            )
+        }, ContextCompat.getMainExecutor(context))
+
+        onDispose { }
     }
 
-    val previewView = remember { PreviewView(context) }
-
-    if (permissionGranted) {
-        LaunchedEffect(Unit) {
-            try {
-                val cameraProvider = ProcessCameraProvider.getInstance(context).get()
-                val preview = Preview.Builder().build().apply {
-                    setSurfaceProvider(previewView.surfaceProvider)
+    Box(modifier = Modifier.fillMaxSize()) {
+        AndroidView(
+            modifier = Modifier.fillMaxSize(),
+            factory = {
+                PreviewView(it).apply {
+                    layoutParams = ViewGroup.LayoutParams(
+                        ViewGroup.LayoutParams.MATCH_PARENT,
+                        ViewGroup.LayoutParams.MATCH_PARENT
+                    )
                 }
+            }
+        )
+    }
+}
 
-                val selector = CameraSelector.DEFAULT_BACK_CAMERA
-                val analyzer = ImageAnalysis.Builder()
-                    .setTargetResolution(Size(1280, 720))
-                    .setBackpressureStrategy(ImageAnalysis.STRATEGY_KEEP_ONLY_LATEST)
-                    .build()
-
-                val scanner = BarcodeScanning.getClient()
-                val executor = Executors.newSingleThreadExecutor()
-
-                analyzer.setAnalyzer(executor) { imageProxy ->
-                    if (!scanning) {
-                        imageProxy.close()
-                        return@setAnalyzer
-                    }
-
-                    try {
-                        val mediaImage = imageProxy.image
-                        if (mediaImage != null) {
-                            val inputImage = InputImage.fromMediaImage(mediaImage, imageProxy.imageInfo.rotationDegrees)
-                            scanner.process(inputImage)
-                                .addOnSuccessListener { barcodes ->
-                                    val value = barcodes.firstOrNull()?.rawValue
-                                    if (!value.isNullOrEmpty()) {
-                                        scanning = false
-                                        onScanned(value)
-                                    }
-                                }
-                                .addOnFailureListener { /* ignored */ }
-                                .addOnCompleteListener { imageProxy.close() }
-                        } else {
-                            imageProxy.close()
-                        }
-                    } catch (e: Exception) {
-                        imageProxy.close()
+private fun processImageProxy(imageProxy: ImageProxy, onScanned: (String) -> Unit) {
+    val mediaImage = imageProxy.image
+    if (mediaImage != null) {
+        val image = InputImage.fromMediaImage(mediaImage, imageProxy.imageInfo.rotationDegrees)
+        BarcodeScanning.getClient()
+            .process(image)
+            .addOnSuccessListener { barcodes ->
+                for (barcode in barcodes) {
+                    barcode.rawValue?.let { value ->
+                        onScanned(value)
                     }
                 }
-
-                cameraProvider.unbindAll()
-                cameraProvider.bindToLifecycle(
-                    lifecycleOwner,
-                    selector,
-                    preview,
-                    analyzer
-                )
-            } catch (_: Exception) {
-                // Log or handle camera exception
             }
-        }
-
-        Box(Modifier.fillMaxSize()) {
-            AndroidView(factory = { previewView }, modifier = Modifier.fillMaxSize())
-
-            if (scanning) {
-                Text(
-                    text = "Scanning IMEI...",
-                    modifier = Modifier
-                        .align(Alignment.TopCenter)
-                        .padding(top = 24.dp)
-                )
-            }
-        }
-
+            .addOnFailureListener { }
+            .addOnCompleteListener { imageProxy.close() }
     } else {
-        Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-            Text("Camera permission is required to scan.")
-        }
+        imageProxy.close()
     }
 }

@@ -9,19 +9,17 @@ import androidx.navigation.NavHostController
 import com.example.inventoryapp.ui.InventoryScreen
 import com.example.inventoryapp.ui.TransactionScreen
 import com.example.inventoryapp.ui.TransactionListScreen
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.height
-
 
 @Composable
 fun MainScreen(navController: NavHostController) {
     var selectedTab by remember { mutableStateOf(0) }
     val tabTitles = listOf("Inventory", "Transaction", "Reports")
 
-    Column(modifier = Modifier.fillMaxSize().padding(16.dp)) {
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(12.dp)
+    ) {
         TabRow(selectedTabIndex = selectedTab) {
             tabTitles.forEachIndexed { index, title ->
                 Tab(
@@ -32,12 +30,12 @@ fun MainScreen(navController: NavHostController) {
             }
         }
 
-        Spacer(modifier = Modifier.height(12.dp))
+        Spacer(modifier = Modifier.height(8.dp))
 
         when (selectedTab) {
-            0 -> InventoryScreen(navController)
-            1 -> TransactionScreen(navController)
-            2 -> TransactionListScreen()
+            0 -> InventoryScreen(navController = navController)
+            1 -> TransactionScreen(navController = navController)
+            2 -> TransactionListScreen(navController = navController)
         }
     }
 }

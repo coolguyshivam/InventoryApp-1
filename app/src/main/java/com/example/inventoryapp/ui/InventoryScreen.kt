@@ -1,4 +1,4 @@
-package com.example.inventoryapp.ui
+package com.example.inventoryapp.ui.screens
 
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.clickable
@@ -21,16 +21,20 @@ fun InventoryScreen(navController: NavHostController) {
     var filter by remember { mutableStateOf("") }
     var selectedItem by remember { mutableStateOf<Map<String, Any>?>(null) }
 
+    // Realtime listener to fetch only "Purchase" type
     LaunchedEffect(Unit) {
         db.collection("transactions")
             .whereEqualTo("type", "Purchase")
             .addSnapshotListener { snapshot, _ ->
                 items.clear()
-                snapshot?.forEach { doc -> items.add(doc.data + ("id" to doc.id)) }
+                snapshot?.forEach { doc ->
+                    items.add(doc.data + ("id" to doc.id))
+                }
             }
     }
 
     Column(modifier = Modifier.fillMaxSize().padding(8.dp)) {
+        // Search Box
         OutlinedTextField(
             value = filter,
             onValueChange = { filter = it },
@@ -38,12 +42,15 @@ fun InventoryScreen(navController: NavHostController) {
             modifier = Modifier.fillMaxWidth()
         )
 
+        // Card List
         LazyColumn(modifier = Modifier.fillMaxSize()) {
-            val filteredItems = items.filter {
-                val search = filter.lowercase()
-                listOf("serial", "model", "phone", "aadhaar").any {
-                    (it2 -> (it[it2]?.toString()?.lowercase()?.contains(search) == true))
-                }
+            val filteredItems = items.filter { item ->
+                val searchLower = filter.trim().lowercase()
+                searchLower.isBlank() ||
+                    item["serial"].toString().lowercase().contains(searchLower) ||
+                    item["model"].toString().lowercase().contains(searchLower) ||
+                    item["phone"].toString().lowercase().contains(searchLower) ||
+                    item["aadhaar"].toString().lowercase().contains(searchLower)
             }
 
             items(filteredItems.size) { index ->
@@ -81,6 +88,7 @@ fun InventoryScreen(navController: NavHostController) {
         }
     }
 
+    // Dialog: Full Detail + Image Preview
     if (selectedItem != null) {
         val item = selectedItem!!
         Dialog(onDismissRequest = { selectedItem = null }) {

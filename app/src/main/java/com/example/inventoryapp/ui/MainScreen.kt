@@ -1,39 +1,26 @@
 package com.example.inventoryapp.ui
 
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Inventory
+import androidx.compose.material.icons.filled.Home // Use Home as a placeholder if Inventory is missing
 import androidx.compose.material.icons.filled.List
 import androidx.compose.material.icons.filled.ShoppingCart
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
-import androidx.compose.ui.Modifier
-import androidx.compose.ui.unit.dp
 import androidx.navigation.NavHostController
-import com.example.inventoryapp.ui.InventoryScreen
-import com.example.inventoryapp.ui.TransactionScreen
-import com.example.inventoryapp.ui.TransactionListScreen
 
 @Composable
 fun MainScreen(navController: NavHostController) {
     var selectedTab by remember { mutableStateOf(0) }
 
     val tabs = listOf(
-        TabItem("Inventory", Icons.Filled.Inventory),
+        TabItem("Inventory", Icons.Filled.Home), // Use Home icon as a placeholder
         TabItem("Transaction", Icons.Filled.ShoppingCart),
         TabItem("Reports", Icons.Filled.List)
     )
 
     Scaffold(
         topBar = {
-            TabRow(
-                selectedTabIndex = selectedTab,
-                indicator = { tabPositions ->
-                    TabRowDefaults.Indicator(
-                        Modifier.tabIndicatorOffset(tabPositions[selectedTab]),
-                        color = MaterialTheme.colorScheme.primary
-                    )
-                }
-            ) {
+            TabRow(selectedTabIndex = selectedTab) {
                 tabs.forEachIndexed { index, tab ->
                     Tab(
                         selected = selectedTab == index,

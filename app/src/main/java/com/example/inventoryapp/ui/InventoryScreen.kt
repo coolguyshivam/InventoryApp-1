@@ -1,4 +1,4 @@
-package com.example.inventoryapp.ui.screens
+package com.example.inventoryapp.ui
 
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.clickable

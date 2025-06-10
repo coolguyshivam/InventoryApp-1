@@ -6,9 +6,9 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavHostController
-import com.example.inventoryapp.ui.screens.InventoryScreen
-import com.example.inventoryapp.ui.screens.TransactionScreen
-import com.example.inventoryapp.ui.screens.TransactionListScreen
+import com.example.inventoryapp.ui.InventoryScreen
+import com.example.inventoryapp.ui.TransactionScreen
+import com.example.inventoryapp.ui.TransactionListScreen
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding

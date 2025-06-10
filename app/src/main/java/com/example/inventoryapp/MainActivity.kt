@@ -14,7 +14,7 @@ class MainActivity : ComponentActivity() {
         setContent {
             InventoryAppTheme {
                 val navController = rememberNavController()
-                MainScreen(navController = navController)
+                MainScreen(navController)
             }
         }
     }

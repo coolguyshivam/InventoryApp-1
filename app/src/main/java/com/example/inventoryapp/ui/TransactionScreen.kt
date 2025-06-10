@@ -14,7 +14,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
-import androidx.navigation.NavHostController
 import coil.compose.rememberAsyncImagePainter
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.storage.FirebaseStorage
@@ -22,6 +21,9 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.tasks.await
 import java.util.*
 import com.example.inventoryapp.ui.InventoryScreen
+import androidx.compose.material3.Text
+import androidx.compose.runtime.Composable
+import androidx.navigation.NavHostController
 
 @Composable
 fun TransactionScreen(
@@ -30,6 +32,7 @@ fun TransactionScreen(
     defaultSerial: String? = null,
     defaultItem: String? = null
 ) {
+	Text("Transaction Screen")
     val db = FirebaseFirestore.getInstance()
     val storage = FirebaseStorage.getInstance()
     val scope = rememberCoroutineScope()

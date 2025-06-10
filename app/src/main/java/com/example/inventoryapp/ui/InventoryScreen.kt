@@ -1,5 +1,8 @@
 package com.example.inventoryapp.ui
 
+import androidx.compose.material3.Text
+import androidx.compose.runtime.Composable
+import androidx.navigation.NavHostController
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.material3.*
@@ -7,7 +10,6 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
-import androidx.navigation.NavHostController
 import com.google.firebase.firestore.FirebaseFirestore
 import kotlinx.coroutines.launch
 
@@ -23,6 +25,7 @@ data class InventoryItem(
 
 @Composable
 fun InventoryScreen(navController: NavHostController) {
+	Text("Inventory Screen")
     val db = FirebaseFirestore.getInstance()
     var inventory by remember { mutableStateOf<List<InventoryItem>>(emptyList()) }
     var searchQuery by remember { mutableStateOf("") }

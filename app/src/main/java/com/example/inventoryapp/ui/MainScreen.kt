@@ -35,7 +35,7 @@ fun MainScreen(navController: NavHostController) {
         when (selectedTab) {
             0 -> InventoryScreen(navController)
             1 -> TransactionScreen(navController)
-            2 -> TransactionListScreen()
+            2 -> Text("Reports Tab - Under Construction")
         }
     }
 }

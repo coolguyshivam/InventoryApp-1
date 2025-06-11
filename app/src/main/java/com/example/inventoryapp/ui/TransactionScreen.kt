@@ -32,7 +32,6 @@ fun TransactionScreen(navController: NavHostController) {
 
     val context = LocalContext.current
 
-    // Move saveTransaction OUTSIDE of validateAndSubmit
     fun saveTransaction() {
         val transaction = hashMapOf(
             "type" to transactionType,
@@ -64,31 +63,23 @@ fun TransactionScreen(navController: NavHostController) {
             return
         }
 
-        if (transactionType == "Purchase") {
-            db.collection("transactions")
-                .whereEqualTo("serial", serial)
-                .whereEqualTo("type", "Purchase")
-                .get()
-                .addOnSuccessListener {
-                    if (it.isEmpty) {
-                        saveTransaction()
+        val isPurchase = transactionType == "Purchase"
+        db.collection("transactions")
+            .whereEqualTo("serial", serial)
+            .whereEqualTo("type", "Purchase")
+            .get()
+            .addOnSuccessListener { result ->
+                val canSave = (isPurchase && result.isEmpty) || (!isPurchase && !result.isEmpty)
+                if (canSave) {
+                    saveTransaction()
+                } else {
+                    error = if (isPurchase) {
+                        "Item with this serial already exists in inventory"
                     } else {
-                        error = "Item with this serial already exists in inventory"
+                        "No such item in inventory to sell"
                     }
                 }
-        } else {
-            db.collection("transactions")
-                .whereEqualTo("serial", serial)
-                .whereEqualTo("type", "Purchase")
-                .get()
-                .addOnSuccessListener {
-                    if (!it.isEmpty) {
-                        saveTransaction()
-                    } else {
-                        error = "No such item in inventory to sell"
-                    }
-                }
-        }
+            }
     }
 
     // Auto-fill model if sale and serial is valid
@@ -111,9 +102,11 @@ fun TransactionScreen(navController: NavHostController) {
         }
     }
 
-    Column(modifier = Modifier
-        .fillMaxSize()
-        .padding(16.dp)) {
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(16.dp)
+    ) {
         Text("Transaction Type", style = MaterialTheme.typography.titleMedium)
         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             listOf("Purchase", "Sale").forEach {
@@ -130,14 +123,54 @@ fun TransactionScreen(navController: NavHostController) {
 
         Spacer(modifier = Modifier.height(8.dp))
 
-        OutlinedTextField(value = model, onValueChange = { model = it }, label = { Text("Model") }, modifier = Modifier.fillMaxWidth())
-        OutlinedTextField(value = serial, onValueChange = { serial = it }, label = { Text("Serial Number") }, modifier = Modifier.fillMaxWidth())
-        OutlinedTextField(value = phone, onValueChange = { phone = it }, label = { Text("Phone Number") }, modifier = Modifier.fillMaxWidth())
-        OutlinedTextField(value = aadhaar, onValueChange = { aadhaar = it }, label = { Text("Aadhaar Number") }, modifier = Modifier.fillMaxWidth())
-        OutlinedTextField(value = amount, onValueChange = { amount = it }, label = { Text("Amount") }, modifier = Modifier.fillMaxWidth())
-        OutlinedTextField(value = quantity, onValueChange = { quantity = it }, label = { Text("Quantity") }, modifier = Modifier.fillMaxWidth())
-        OutlinedTextField(value = date, onValueChange = { date = it }, label = { Text("Date") }, modifier = Modifier.fillMaxWidth())
-        OutlinedTextField(value = description, onValueChange = { description = it }, label = { Text("Description") }, modifier = Modifier.fillMaxWidth())
+        OutlinedTextField(
+            value = model,
+            onValueChange = { model = it },
+            label = { Text("Model") },
+            modifier = Modifier.fillMaxWidth()
+        )
+        OutlinedTextField(
+            value = serial,
+            onValueChange = { serial = it },
+            label = { Text("Serial Number") },
+            modifier = Modifier.fillMaxWidth()
+        )
+        OutlinedTextField(
+            value = phone,
+            onValueChange = { phone = it },
+            label = { Text("Phone Number") },
+            modifier = Modifier.fillMaxWidth()
+        )
+        OutlinedTextField(
+            value = aadhaar,
+            onValueChange = { aadhaar = it },
+            label = { Text("Aadhaar Number") },
+            modifier = Modifier.fillMaxWidth()
+        )
+        OutlinedTextField(
+            value = amount,
+            onValueChange = { amount = it },
+            label = { Text("Amount") },
+            modifier = Modifier.fillMaxWidth()
+        )
+        OutlinedTextField(
+            value = quantity,
+            onValueChange = { quantity = it },
+            label = { Text("Quantity") },
+            modifier = Modifier.fillMaxWidth()
+        )
+        OutlinedTextField(
+            value = date,
+            onValueChange = { date = it },
+            label = { Text("Date") },
+            modifier = Modifier.fillMaxWidth()
+        )
+        OutlinedTextField(
+            value = description,
+            onValueChange = { description = it },
+            label = { Text("Description") },
+            modifier = Modifier.fillMaxWidth()
+        )
 
         if (error.isNotEmpty()) {
             Text(error, color = MaterialTheme.colorScheme.error)

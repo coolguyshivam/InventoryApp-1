@@ -10,6 +10,8 @@ import androidx.navigation.NavHostController
 import com.google.firebase.firestore.FirebaseFirestore
 import java.text.SimpleDateFormat
 import java.util.*
+// FIX: Add this import for LocalContext
+import androidx.compose.ui.platform.LocalContext
 
 @Composable
 fun TransactionScreen(navController: NavHostController) {

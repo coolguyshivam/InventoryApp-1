@@ -22,6 +22,7 @@ import androidx.navigation.NavHostController
 import com.google.mlkit.vision.barcode.Barcode
 import com.google.mlkit.vision.barcode.BarcodeScanning
 import com.google.mlkit.vision.common.InputImage
+import com.google.mlkit.vision.barcode.common.Barcode
 
 @Composable
 fun BarcodeScannerScreen(navController: NavHostController) {

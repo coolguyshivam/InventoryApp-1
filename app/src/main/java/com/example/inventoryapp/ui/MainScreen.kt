@@ -2,9 +2,6 @@ package com.example.inventoryapp.ui
 
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
-import androidx.compose.material.Icons.Default.Inventory
-import androidx.compose.material.Icons.Default.Inventory
-import androidx.compose.material.Icons.Default.Inventory
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.res.painterResource
@@ -23,9 +20,9 @@ fun MainScreen(navController: NavHostController) {
 
     val tabTitles = listOf("Inventory", "Add Transaction", "Scan IMEI", "Reports")
 	val tabIcons = listOf(
-		Icons.Default.Inventory,
+		Icons.Default.Home,
 		Icons.Default.Add,
-		Icons.Default.QrCodeScanner,
+		Icons.Default.Search,
 		Icons.Default.List
 	)
 

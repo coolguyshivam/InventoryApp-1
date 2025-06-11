@@ -13,13 +13,14 @@ import androidx.compose.ui.window.Dialog
 import androidx.navigation.NavHostController
 import coil.compose.rememberAsyncImagePainter
 import com.google.firebase.firestore.FirebaseFirestore
+import com.example.inventoryapp.model.InventoryItem
 
 @Composable
 fun InventoryScreen(navController: NavHostController) {
     val db = FirebaseFirestore.getInstance()
-    val items = remember { mutableStateListOf<Map<String, Any>>() }
+    val items = remember { mutableStateListOf<InventoryItem>() }
     var filter by remember { mutableStateOf("") }
-    var selectedItem by remember { mutableStateOf<Map<String, Any>?>(null) }
+    var selectedItem by remember { mutableStateOf<InventoryItem?>(null) }
 
     // Handle scanned serial for filtering or selection
     val navBackStackEntry = navController.currentBackStackEntry
@@ -38,7 +39,19 @@ fun InventoryScreen(navController: NavHostController) {
             .addSnapshotListener { snapshot, _ ->
                 items.clear()
                 snapshot?.forEach { doc ->
-                    items.add(doc.data + mapOf("id" to doc.id))
+                    val data = doc.data
+                    val item = InventoryItem(
+                        id = doc.id,
+                        model = data["model"] as? String ?: "",
+                        serial = data["serial"] as? String ?: "",
+                        phone = data["phone"] as? String ?: "",
+                        aadhaar = data["aadhaar"] as? String ?: "",
+                        description = data["description"] as? String ?: "",
+                        date = data["date"] as? String ?: "",
+                        imageUrls = data["imageUrls"] as? List<String> ?: emptyList(),
+                        timestamp = (data["timestamp"] as? Number)?.toLong() ?: 0L
+                    )
+                    items.add(item)
                 }
             }
     }
@@ -57,10 +70,10 @@ fun InventoryScreen(navController: NavHostController) {
             val filteredItems = items.filter { item ->
                 val searchLower = filter.trim().lowercase()
                 searchLower.isBlank() ||
-                    item["serial"].toString().lowercase().contains(searchLower) ||
-                    item["model"].toString().lowercase().contains(searchLower) ||
-                    item["phone"].toString().lowercase().contains(searchLower) ||
-                    item["aadhaar"].toString().lowercase().contains(searchLower)
+                    item.serial.lowercase().contains(searchLower) ||
+                    item.model.lowercase().contains(searchLower) ||
+                    item.phone.lowercase().contains(searchLower) ||
+                    item.aadhaar.lowercase().contains(searchLower)
             }
 
             items(filteredItems.size) { index ->
@@ -72,13 +85,12 @@ fun InventoryScreen(navController: NavHostController) {
                         .clickable { selectedItem = item }
                 ) {
                     Column(modifier = Modifier.padding(12.dp)) {
-                        Text("Model: ${item["model"]}")
-                        Text("Serial: ${item["serial"]}")
-                        val imageUrls = item["imageUrls"] as? List<*> ?: emptyList<String>()
+                        Text("Model: ${item.model}")
+                        Text("Serial: ${item.serial}")
                         Row {
-                            imageUrls.take(3).forEach {
+                            item.imageUrls.take(3).forEach {
                                 Image(
-                                    painter = rememberAsyncImagePainter(it.toString()),
+                                    painter = rememberAsyncImagePainter(it),
                                     contentDescription = null,
                                     modifier = Modifier.size(64.dp).padding(4.dp)
                                 )
@@ -86,7 +98,7 @@ fun InventoryScreen(navController: NavHostController) {
                         }
                         Button(
                             onClick = {
-                                navController.navigate("transaction?serial=${item["serial"]}")
+                                navController.navigate("transaction?serial=${item.serial}")
                             },
                             modifier = Modifier.align(Alignment.End).padding(top = 8.dp)
                         ) {
@@ -104,17 +116,16 @@ fun InventoryScreen(navController: NavHostController) {
         Dialog(onDismissRequest = { selectedItem = null }) {
             Surface(shape = MaterialTheme.shapes.medium) {
                 Column(modifier = Modifier.padding(16.dp)) {
-                    Text("Details for ${item["model"]}", style = MaterialTheme.typography.titleMedium)
+                    Text("Details for ${item.model}", style = MaterialTheme.typography.titleMedium)
                     Spacer(Modifier.height(8.dp))
-                    Text("Serial: ${item["serial"]}")
-                    Text("Phone: ${item["phone"]}")
-                    Text("Aadhaar: ${item["aadhaar"]}")
-                    Text("Description: ${item["description"]}")
-                    Text("Date: ${item["date"]}")
-                    val imageUrls = item["imageUrls"] as? List<*> ?: emptyList<String>()
-                    imageUrls.forEach {
+                    Text("Serial: ${item.serial}")
+                    Text("Phone: ${item.phone}")
+                    Text("Aadhaar: ${item.aadhaar}")
+                    Text("Description: ${item.description}")
+                    Text("Date: ${item.date}")
+                    item.imageUrls.forEach {
                         Image(
-                            painter = rememberAsyncImagePainter(it.toString()),
+                            painter = rememberAsyncImagePainter(it),
                             contentDescription = null,
                             modifier = Modifier
                                 .fillMaxWidth()

@@ -15,6 +15,7 @@ fun TransactionScreen(navController: NavHostController) {
     val db = FirebaseFirestore.getInstance()
 
     val navBackStackEntry = navController.currentBackStackEntry
+    val scannedSerial = navBackStackEntry?.savedStateHandle?.get<String>("scannedSerial")
     val serialArg = navBackStackEntry?.arguments?.getString("serial") ?: ""
     val typeArg = navBackStackEntry?.arguments?.getString("type") ?: "Purchase"
 
@@ -28,6 +29,14 @@ fun TransactionScreen(navController: NavHostController) {
     var date by remember { mutableStateOf(SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).format(Date())) }
     var quantity by remember { mutableStateOf("1") }
     var error by remember { mutableStateOf("") }
+
+    // Update serial if a scanned barcode is returned
+    LaunchedEffect(scannedSerial) {
+        scannedSerial?.let {
+            serial = it
+            navBackStackEntry.savedStateHandle.remove<String>("scannedSerial")
+        }
+    }
 
     LaunchedEffect(serial, transactionType) {
         if (transactionType == "Sale" && serial.isNotBlank()) {

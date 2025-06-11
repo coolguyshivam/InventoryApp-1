@@ -21,6 +21,16 @@ fun InventoryScreen(navController: NavHostController) {
     var filter by remember { mutableStateOf("") }
     var selectedItem by remember { mutableStateOf<Map<String, Any>?>(null) }
 
+    // Handle scanned serial for filtering or selection
+    val navBackStackEntry = navController.currentBackStackEntry
+    val scannedSerial = navBackStackEntry?.savedStateHandle?.get<String>("scannedSerial")
+    LaunchedEffect(scannedSerial) {
+        scannedSerial?.let {
+            filter = it
+            navBackStackEntry.savedStateHandle.remove<String>("scannedSerial")
+        }
+    }
+
     // Realtime listener to fetch only "Purchase" type
     LaunchedEffect(Unit) {
         db.collection("transactions")

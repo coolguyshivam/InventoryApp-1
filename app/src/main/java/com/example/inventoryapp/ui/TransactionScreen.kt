@@ -1,4 +1,4 @@
-package com.example.inventoryapp.ui.screens
+package com.example.inventoryapp.ui
 
 import android.util.Patterns
 import androidx.compose.foundation.layout.*

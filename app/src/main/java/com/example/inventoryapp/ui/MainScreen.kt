@@ -19,7 +19,7 @@ fun MainScreen(navController: NavHostController) {
     var selectedTab by remember { mutableStateOf(0) }
 
     val tabTitles = listOf("Inventory", "Add Transaction", "Scan IMEI", "Reports")
-    val tabIcons = listOf(Icons.Default.Inventory, Icons.Default.Add, Icons.Default.QrCodeScanner, Icons.Default.List)
+	val tabIcons = listOf(Icons.Default.Store, Icons.Default.Add, Icons.Default.QrCode, Icons.Default.List)
 
     Scaffold(
         bottomBar = {

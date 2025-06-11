@@ -3,9 +3,9 @@ package com.example.inventoryapp.ui
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
-import androidx.compose.material.icons.filled.Inventory
+import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.List
-import androidx.compose.material.icons.filled.QrCodeScanner
+import androidx.compose.material.icons.filled.Build
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
@@ -16,7 +16,7 @@ import com.example.inventoryapp.ui.*
 @Composable
 fun MainScreen(navController: NavHostController = rememberNavController()) {
     val items = listOf("Inventory", "Add", "Scan", "Reports")
-    val icons = listOf(Icons.Default.Inventory, Icons.Default.Add, Icons.Default.QrCodeScanner, Icons.Default.List)
+    val icons = listOf(Icons.Default.Home, Icons.Default.Add, Icons.Default.Build, Icons.Default.List)
 
     Scaffold(
         bottomBar = {

@@ -10,7 +10,6 @@ import androidx.navigation.NavHostController
 import com.google.firebase.firestore.FirebaseFirestore
 import java.text.SimpleDateFormat
 import java.util.*
-// FIX: Add this import for LocalContext
 import androidx.compose.ui.platform.LocalContext
 
 @Composable
@@ -33,61 +32,7 @@ fun TransactionScreen(navController: NavHostController) {
 
     val context = LocalContext.current
 
-    // Auto-fill model if sale and serial is valid
-    LaunchedEffect(serial) {
-        if (transactionType == "Sale" && serial.isNotBlank()) {
-            db.collection("transactions")
-                .whereEqualTo("serial", serial)
-                .whereEqualTo("type", "Purchase")
-                .limit(1)
-                .get()
-                .addOnSuccessListener {
-                    if (!it.isEmpty) {
-                        val purchaseData = it.documents[0].data
-                        model = purchaseData?.get("model")?.toString() ?: ""
-                    } else {
-                        model = ""
-                        error = "Item not in inventory"
-                    }
-                }
-        }
-    }
-
-    fun validateAndSubmit() {
-        if (model.isBlank() || serial.isBlank() || amount.isBlank()) {
-            error = "Model, Serial and Amount are required"
-            return
-        }
-
-        if (transactionType == "Purchase") {
-            // prevent duplicate purchase
-            db.collection("transactions")
-                .whereEqualTo("serial", serial)
-                .whereEqualTo("type", "Purchase")
-                .get()
-                .addOnSuccessListener {
-                    if (it.isEmpty) {
-                        saveTransaction()
-                    } else {
-                        error = "Item with this serial already exists in inventory"
-                    }
-                }
-        } else {
-            // ensure item is in inventory before sale
-            db.collection("transactions")
-                .whereEqualTo("serial", serial)
-                .whereEqualTo("type", "Purchase")
-                .get()
-                .addOnSuccessListener {
-                    if (!it.isEmpty) {
-                        saveTransaction()
-                    } else {
-                        error = "No such item in inventory to sell"
-                    }
-                }
-        }
-    }
-
+    // Move saveTransaction OUTSIDE of validateAndSubmit
     fun saveTransaction() {
         val transaction = hashMapOf(
             "type" to transactionType,
@@ -113,7 +58,62 @@ fun TransactionScreen(navController: NavHostController) {
         quantity = "1"
     }
 
-    Column(modifier = Modifier.fillMaxSize().padding(16.dp)) {
+    fun validateAndSubmit() {
+        if (model.isBlank() || serial.isBlank() || amount.isBlank()) {
+            error = "Model, Serial and Amount are required"
+            return
+        }
+
+        if (transactionType == "Purchase") {
+            db.collection("transactions")
+                .whereEqualTo("serial", serial)
+                .whereEqualTo("type", "Purchase")
+                .get()
+                .addOnSuccessListener {
+                    if (it.isEmpty) {
+                        saveTransaction()
+                    } else {
+                        error = "Item with this serial already exists in inventory"
+                    }
+                }
+        } else {
+            db.collection("transactions")
+                .whereEqualTo("serial", serial)
+                .whereEqualTo("type", "Purchase")
+                .get()
+                .addOnSuccessListener {
+                    if (!it.isEmpty) {
+                        saveTransaction()
+                    } else {
+                        error = "No such item in inventory to sell"
+                    }
+                }
+        }
+    }
+
+    // Auto-fill model if sale and serial is valid
+    LaunchedEffect(serial, transactionType) {
+        if (transactionType == "Sale" && serial.isNotBlank()) {
+            db.collection("transactions")
+                .whereEqualTo("serial", serial)
+                .whereEqualTo("type", "Purchase")
+                .limit(1)
+                .get()
+                .addOnSuccessListener {
+                    if (!it.isEmpty) {
+                        val purchaseData = it.documents[0].data
+                        model = purchaseData?.get("model")?.toString() ?: ""
+                    } else {
+                        model = ""
+                        error = "Item not in inventory"
+                    }
+                }
+        }
+    }
+
+    Column(modifier = Modifier
+        .fillMaxSize()
+        .padding(16.dp)) {
         Text("Transaction Type", style = MaterialTheme.typography.titleMedium)
         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             listOf("Purchase", "Sale").forEach {

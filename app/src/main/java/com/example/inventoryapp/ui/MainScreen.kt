@@ -13,7 +13,6 @@ import androidx.navigation.NavType
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.*
 import androidx.navigation.compose.navArgument
-import com.example.inventoryapp.ui.*
 
 @Composable
 fun MainScreen(navController: NavHostController = rememberNavController()) {

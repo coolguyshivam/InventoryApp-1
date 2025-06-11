@@ -45,7 +45,7 @@ fun MainScreen(navController: NavHostController) {
                 0 -> InventoryScreen(navController)
                 1 -> TransactionScreen(navController)
                 2 -> BarcodeScannerScreen(navController)
-                3 -> TransactionListScreen(navController)
+                3 -> TransactionListScreen()
             }
         }
     }

@@ -7,7 +7,8 @@ import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.List
 import androidx.compose.material.icons.filled.Build
 import androidx.compose.material3.*
-import androidx.compose.runtime.*
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.navigation.NavType
 import androidx.navigation.NavHostController
@@ -22,7 +23,8 @@ fun MainScreen(navController: NavHostController = rememberNavController()) {
     Scaffold(
         bottomBar = {
             NavigationBar {
-                val currentRoute = navController.currentBackStackEntryAsState().value?.destination?.route
+                val currentBackStackEntry by navController.currentBackStackEntryAsState()
+                val currentRoute = currentBackStackEntry?.destination?.route
                 items.forEachIndexed { index, screen ->
                     NavigationBarItem(
                         icon = { Icon(icons[index], contentDescription = screen) },

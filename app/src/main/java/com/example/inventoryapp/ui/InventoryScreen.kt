@@ -57,7 +57,6 @@ fun InventoryScreen(navController: NavHostController) {
     }
 
     Column(modifier = Modifier.fillMaxSize().padding(8.dp)) {
-        // Search Box
         OutlinedTextField(
             value = filter,
             onValueChange = { filter = it },
@@ -65,7 +64,6 @@ fun InventoryScreen(navController: NavHostController) {
             modifier = Modifier.fillMaxWidth()
         )
 
-        // Card List
         LazyColumn(modifier = Modifier.fillMaxSize()) {
             val filteredItems = items.filter { item ->
                 val searchLower = filter.trim().lowercase()

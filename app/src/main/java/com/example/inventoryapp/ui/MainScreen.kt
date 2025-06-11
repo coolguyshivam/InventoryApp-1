@@ -13,7 +13,7 @@ import androidx.compose.ui.Modifier
 import androidx.navigation.NavType
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.*
-import androidx.navigation.compose.navArgument
+import androidx.navigation.navArgument
 
 @Composable
 fun MainScreen(navController: NavHostController = rememberNavController()) {

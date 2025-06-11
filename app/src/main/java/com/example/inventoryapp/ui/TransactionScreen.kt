@@ -34,7 +34,7 @@ fun TransactionScreen(navController: NavHostController) {
     LaunchedEffect(scannedSerial) {
         scannedSerial?.let {
             serial = it
-            navBackStackEntry.savedStateHandle.remove<String>("scannedSerial")
+            navBackStackEntry.savedStateHandle.remove("scannedSerial")
         }
     }
 

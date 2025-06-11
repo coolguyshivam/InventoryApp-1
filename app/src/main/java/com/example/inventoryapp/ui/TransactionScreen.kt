@@ -1,6 +1,6 @@
-package com.example.inventoryapp.ui
+package com.example.inventoryapp.ui.screens
 
-import android.util.Patterns
+import android.util.Log
 import androidx.compose.foundation.layout.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -14,9 +14,13 @@ import java.util.*
 @Composable
 fun TransactionScreen(navController: NavHostController) {
     val db = FirebaseFirestore.getInstance()
+
+    // Parse serial if passed from scanner
+    val serialFromArgs = navController.currentBackStackEntry?.arguments?.getString("serial")
+
     var transactionType by remember { mutableStateOf("Purchase") }
     var model by remember { mutableStateOf("") }
-    var serial by remember { mutableStateOf("") }
+    var serial by remember { mutableStateOf(serialFromArgs ?: "") }
     var phone by remember { mutableStateOf("") }
     var aadhaar by remember { mutableStateOf("") }
     var amount by remember { mutableStateOf("") }
@@ -25,25 +29,64 @@ fun TransactionScreen(navController: NavHostController) {
     var quantity by remember { mutableStateOf("1") }
     var error by remember { mutableStateOf("") }
 
-    fun isValid(): Boolean {
-        if (model.isBlank() || serial.isBlank() || amount.isBlank()) {
-            error = "Model, Serial, and Amount are required"
-            return false
+    val context = LocalContext.current
+
+    // Auto-fill model if sale and serial is valid
+    LaunchedEffect(serial) {
+        if (transactionType == "Sale" && serial.isNotBlank()) {
+            db.collection("transactions")
+                .whereEqualTo("serial", serial)
+                .whereEqualTo("type", "Purchase")
+                .limit(1)
+                .get()
+                .addOnSuccessListener {
+                    if (!it.isEmpty) {
+                        val purchaseData = it.documents[0].data
+                        model = purchaseData?.get("model")?.toString() ?: ""
+                    } else {
+                        model = ""
+                        error = "Item not in inventory"
+                    }
+                }
         }
-        if (phone.isNotBlank() && phone.length != 10) {
-            error = "Phone number must be 10 digits"
-            return false
-        }
-        if (aadhaar.isNotBlank() && aadhaar.length != 12) {
-            error = "Aadhaar number must be 12 digits"
-            return false
-        }
-        return true
     }
 
-    fun submitTransaction() {
-        if (!isValid()) return
+    fun validateAndSubmit() {
+        if (model.isBlank() || serial.isBlank() || amount.isBlank()) {
+            error = "Model, Serial and Amount are required"
+            return
+        }
 
+        if (transactionType == "Purchase") {
+            // prevent duplicate purchase
+            db.collection("transactions")
+                .whereEqualTo("serial", serial)
+                .whereEqualTo("type", "Purchase")
+                .get()
+                .addOnSuccessListener {
+                    if (it.isEmpty) {
+                        saveTransaction()
+                    } else {
+                        error = "Item with this serial already exists in inventory"
+                    }
+                }
+        } else {
+            // ensure item is in inventory before sale
+            db.collection("transactions")
+                .whereEqualTo("serial", serial)
+                .whereEqualTo("type", "Purchase")
+                .get()
+                .addOnSuccessListener {
+                    if (!it.isEmpty) {
+                        saveTransaction()
+                    } else {
+                        error = "No such item in inventory to sell"
+                    }
+                }
+        }
+    }
+
+    fun saveTransaction() {
         val transaction = hashMapOf(
             "type" to transactionType,
             "model" to model,
@@ -58,6 +101,7 @@ fun TransactionScreen(navController: NavHostController) {
         )
 
         db.collection("transactions").add(transaction)
+        error = ""
         model = ""
         serial = ""
         phone = ""
@@ -65,7 +109,6 @@ fun TransactionScreen(navController: NavHostController) {
         amount = ""
         description = ""
         quantity = "1"
-        error = ""
     }
 
     Column(modifier = Modifier.fillMaxSize().padding(16.dp)) {
@@ -83,7 +126,8 @@ fun TransactionScreen(navController: NavHostController) {
             }
         }
 
-        Spacer(Modifier.height(8.dp))
+        Spacer(modifier = Modifier.height(8.dp))
+
         OutlinedTextField(value = model, onValueChange = { model = it }, label = { Text("Model") }, modifier = Modifier.fillMaxWidth())
         OutlinedTextField(value = serial, onValueChange = { serial = it }, label = { Text("Serial Number") }, modifier = Modifier.fillMaxWidth())
         OutlinedTextField(value = phone, onValueChange = { phone = it }, label = { Text("Phone Number") }, modifier = Modifier.fillMaxWidth())
@@ -93,11 +137,14 @@ fun TransactionScreen(navController: NavHostController) {
         OutlinedTextField(value = date, onValueChange = { date = it }, label = { Text("Date") }, modifier = Modifier.fillMaxWidth())
         OutlinedTextField(value = description, onValueChange = { description = it }, label = { Text("Description") }, modifier = Modifier.fillMaxWidth())
 
-        if (error.isNotBlank()) {
-            Text(text = error, color = MaterialTheme.colorScheme.error)
+        if (error.isNotEmpty()) {
+            Text(error, color = MaterialTheme.colorScheme.error)
         }
 
-        Button(onClick = { submitTransaction() }, modifier = Modifier.padding(top = 16.dp)) {
+        Button(
+            onClick = { validateAndSubmit() },
+            modifier = Modifier.padding(top = 16.dp)
+        ) {
             Text("Submit")
         }
     }

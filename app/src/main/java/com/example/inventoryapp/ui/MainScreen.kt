@@ -9,8 +9,10 @@ import androidx.compose.material.icons.filled.Build
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
+import androidx.navigation.NavType
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.*
+import androidx.navigation.compose.navArgument
 import com.example.inventoryapp.ui.*
 
 @Composable
@@ -21,7 +23,7 @@ fun MainScreen(navController: NavHostController = rememberNavController()) {
     Scaffold(
         bottomBar = {
             NavigationBar {
-                val currentRoute = currentBackStackEntryAsState(navController).value?.destination?.route
+                val currentRoute = navController.currentBackStackEntryAsState().value?.destination?.route
                 items.forEachIndexed { index, screen ->
                     NavigationBarItem(
                         icon = { Icon(icons[index], contentDescription = screen) },
@@ -48,10 +50,16 @@ fun MainScreen(navController: NavHostController = rememberNavController()) {
             composable("inventory") { InventoryScreen(navController) }
 
             composable(
-                "transaction?serial={serial}&type={type}",
+                route = "transaction?serial={serial}&type={type}",
                 arguments = listOf(
-                    navArgument("serial") { defaultValue = "" },
-                    navArgument("type") { defaultValue = "Purchase" }
+                    navArgument("serial") {
+                        type = NavType.StringType
+                        defaultValue = ""
+                    },
+                    navArgument("type") {
+                        type = NavType.StringType
+                        defaultValue = "Purchase"
+                    }
                 )
             ) {
                 TransactionScreen(navController)

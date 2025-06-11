@@ -1,20 +1,18 @@
 package com.example.inventoryapp.ui
 
 import android.annotation.SuppressLint
-import android.util.Size
-import androidx.camera.core.*
+import androidx.camera.core.CameraSelector
+import androidx.camera.core.ImageAnalysis
+import androidx.camera.core.ImageProxy
 import androidx.camera.lifecycle.ProcessCameraProvider
 import androidx.camera.view.PreviewView
-import androidx.compose.foundation.layout.*
-import androidx.compose.material3.Text
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.unit.dp
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.platform.LocalLifecycleOwner
 import androidx.compose.ui.viewinterop.AndroidView
-import androidx.core.content.ContextCompat
 import androidx.navigation.NavHostController
+import com.google.mlkit.vision.barcode.Barcode
+import com.google.mlkit.vision.barcode.BarcodeScanner
 import com.google.mlkit.vision.barcode.BarcodeScanning
 import com.google.mlkit.vision.common.InputImage
 import java.util.concurrent.Executors
@@ -23,82 +21,58 @@ import java.util.concurrent.Executors
 @Composable
 fun BarcodeScannerScreen(navController: NavHostController) {
     val context = LocalContext.current
-    val lifecycleOwner = LocalLifecycleOwner.current
-    var scanned by remember { mutableStateOf<String?>(null) }
-    val previewView = remember { PreviewView(context) }
+    val scanner: BarcodeScanner = BarcodeScanning.getClient()
+    val cameraProviderFuture = remember { ProcessCameraProvider.getInstance(context) }
     val executor = remember { Executors.newSingleThreadExecutor() }
 
-    LaunchedEffect(scanned) {
-        scanned?.let {
-            navController.navigate("transaction?serial=$it")
-        }
-    }
+    AndroidView(
+        factory = { ctx ->
+            val previewView = PreviewView(ctx)
+            cameraProviderFuture.addListener({
+                val cameraProvider = cameraProviderFuture.get()
 
-    DisposableEffect(Unit) {
-        val cameraProviderFuture = ProcessCameraProvider.getInstance(context)
-        cameraProviderFuture.addListener({
-            val cameraProvider = cameraProviderFuture.get()
-            val preview = Preview.Builder().build().also {
-                it.setSurfaceProvider(previewView.surfaceProvider)
-            }
-
-            val analysis = ImageAnalysis.Builder()
-                .setTargetResolution(Size(1280, 720))
-                .setBackpressureStrategy(ImageAnalysis.STRATEGY_KEEP_ONLY_LATEST)
-                .build()
-
-            val scanner = BarcodeScanning.getClient()
-            analysis.setAnalyzer(executor) { imageProxy ->
-                processImageProxy(scanner, imageProxy) { value ->
-                    scanned = value
+                val preview = androidx.camera.core.Preview.Builder().build().also {
+                    it.setSurfaceProvider(previewView.surfaceProvider)
                 }
-            }
 
-            try {
-                cameraProvider.unbindAll()
-                cameraProvider.bindToLifecycle(
-                    lifecycleOwner,
-                    CameraSelector.DEFAULT_BACK_CAMERA,
-                    preview,
-                    analysis
-                )
-            } catch (e: Exception) {
-                e.printStackTrace()
-            }
-        }, ContextCompat.getMainExecutor(context))
+                val imageAnalyzer = ImageAnalysis.Builder()
+                    .setBackpressureStrategy(ImageAnalysis.STRATEGY_KEEP_ONLY_LATEST)
+                    .build()
+                    .also {
+                        it.setAnalyzer(executor) { imageProxy ->
+                            processBarcode(scanner, imageProxy) { scannedValue ->
+                                navController.navigate("transaction?serial=$scannedValue&type=Purchase")
+                            }
+                        }
+                    }
 
-        onDispose {
-            previewView.controller = null
-        }
-    }
+                val cameraSelector = CameraSelector.DEFAULT_BACK_CAMERA
+                cameraProvider.bindToLifecycle(context as androidx.lifecycle.LifecycleOwner, cameraSelector, preview, imageAnalyzer)
 
-    Column(modifier = Modifier.fillMaxSize()) {
-        AndroidView(factory = { previewView }, modifier = Modifier.weight(1f))
-        scanned?.let {
-            Text("Scanned: $it", modifier = Modifier.padding(16.dp))
-        }
-    }
+            }, ContextCompat.getMainExecutor(context))
+            previewView
+        },
+        modifier = Modifier.fillMaxSize()
+    )
 }
 
-private fun processImageProxy(
-    scanner: com.google.mlkit.vision.barcode.BarcodeScanner,
+private fun processBarcode(
+    scanner: BarcodeScanner,
     imageProxy: ImageProxy,
-    onBarcodeScanned: (String) -> Unit
+    onScanned: (String) -> Unit
 ) {
     val mediaImage = imageProxy.image
     if (mediaImage != null) {
-        val inputImage = InputImage.fromMediaImage(mediaImage, imageProxy.imageInfo.rotationDegrees)
-        scanner.process(inputImage)
+        val image = InputImage.fromMediaImage(mediaImage, imageProxy.imageInfo.rotationDegrees)
+        scanner.process(image)
             .addOnSuccessListener { barcodes ->
                 for (barcode in barcodes) {
-                    val rawValue = barcode.rawValue
-                    if (!rawValue.isNullOrEmpty()) {
-                        onBarcodeScanned(rawValue)
+                    barcode.rawValue?.let {
+                        onScanned(it)
                         break
                     }
                 }
             }
-            .addOnFailureListener { it.printStackTrace() }
             .addOnCompleteListener { imageProxy.close() }
     } else {
         imageProxy.close()

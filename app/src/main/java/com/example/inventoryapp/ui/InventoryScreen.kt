@@ -28,7 +28,7 @@ fun InventoryScreen(navController: NavHostController) {
             .addSnapshotListener { snapshot, _ ->
                 items.clear()
                 snapshot?.forEach { doc ->
-                    items.add(doc.data + ("id" to doc.id))
+                    items.add(doc.data + mapOf("id" to doc.id))
                 }
             }
     }

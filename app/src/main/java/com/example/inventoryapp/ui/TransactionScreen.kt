@@ -1,6 +1,5 @@
 package com.example.inventoryapp.ui
 
-import android.util.Log
 import androidx.compose.foundation.layout.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -16,7 +15,6 @@ import java.util.*
 fun TransactionScreen(navController: NavHostController) {
     val db = FirebaseFirestore.getInstance()
 
-    // Parse serial and type from nav args like: transaction?serial=123&type=Sale
     val navBackStackEntry = navController.currentBackStackEntry
     val serialArg = navBackStackEntry?.arguments?.getString("serial") ?: ""
     val typeArg = navBackStackEntry?.arguments?.getString("type") ?: "Purchase"
@@ -32,7 +30,6 @@ fun TransactionScreen(navController: NavHostController) {
     var quantity by remember { mutableStateOf("1") }
     var error by remember { mutableStateOf("") }
 
-    // Auto-fill model for sale
     LaunchedEffect(serial, transactionType) {
         if (transactionType == "Sale" && serial.isNotBlank()) {
             db.collection("transactions")
@@ -45,11 +42,8 @@ fun TransactionScreen(navController: NavHostController) {
                         model = it.documents[0].getString("model") ?: ""
                     } else {
                         model = ""
-                        error = "Item not in inventory"
+                        error = "Item not found in inventory"
                     }
-                }
-                .addOnFailureListener {
-                    error = "Error fetching item details"
                 }
         }
     }
@@ -61,12 +55,41 @@ fun TransactionScreen(navController: NavHostController) {
             return
         }
         if (phone.isNotBlank() && phone.length != 10) {
-            error = "Phone number must be 10 digits"
+            error = "Phone must be 10 digits"
             return
         }
         if (aadhaar.isNotBlank() && aadhaar.length != 12) {
             error = "Aadhaar must be 12 digits"
             return
+        }
+
+        fun saveTransaction() {
+            val data = hashMapOf(
+                "type" to transactionType,
+                "model" to model,
+                "serial" to serial,
+                "phone" to phone,
+                "aadhaar" to aadhaar,
+                "amount" to amount.toDoubleOrNull(),
+                "description" to description,
+                "date" to date,
+                "quantity" to quantity.toIntOrNull() ?: 1,
+                "timestamp" to System.currentTimeMillis()
+            )
+            db.collection("transactions").add(data)
+                .addOnSuccessListener {
+                    model = ""
+                    serial = ""
+                    phone = ""
+                    aadhaar = ""
+                    amount = ""
+                    description = ""
+                    quantity = "1"
+                    navController.popBackStack()
+                }
+                .addOnFailureListener {
+                    error = "Failed to save transaction"
+                }
         }
 
         if (transactionType == "Purchase") {
@@ -78,7 +101,7 @@ fun TransactionScreen(navController: NavHostController) {
                     if (it.isEmpty) {
                         saveTransaction()
                     } else {
-                        error = "Serial already exists in inventory"
+                        error = "Item with this serial already exists"
                     }
                 }
         } else {
@@ -87,53 +110,28 @@ fun TransactionScreen(navController: NavHostController) {
                 .whereEqualTo("type", "Purchase")
                 .get()
                 .addOnSuccessListener {
-                    if (it.isEmpty) {
-                        error = "Item not found in inventory for sale"
-                    } else {
+                    if (!it.isEmpty) {
                         saveTransaction()
+                    } else {
+                        error = "Item not found in inventory"
                     }
                 }
         }
     }
 
-    fun saveTransaction() {
-        val data = hashMapOf(
-            "type" to transactionType,
-            "model" to model,
-            "serial" to serial,
-            "phone" to phone,
-            "aadhaar" to aadhaar,
-            "amount" to amount.toDoubleOrNull(),
-            "description" to description,
-            "date" to date,
-            "quantity" to quantity.toIntOrNull() ?: 1,
-            "timestamp" to System.currentTimeMillis()
-        )
-        db.collection("transactions").add(data)
-            .addOnSuccessListener {
-                error = ""
-                model = ""
-                serial = ""
-                phone = ""
-                aadhaar = ""
-                amount = ""
-                description = ""
-                quantity = "1"
-                navController.popBackStack() // go back
-            }
-            .addOnFailureListener {
-                error = "Failed to save transaction"
-            }
-    }
+    Column(modifier = Modifier
+        .fillMaxSize()
+        .padding(16.dp)) {
 
-    Column(modifier = Modifier.fillMaxSize().padding(16.dp)) {
         Text("Transaction Type", style = MaterialTheme.typography.titleMedium)
         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             listOf("Purchase", "Sale").forEach {
                 Button(
                     onClick = { transactionType = it },
                     colors = ButtonDefaults.buttonColors(
-                        containerColor = if (transactionType == it) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.secondary
+                        containerColor = if (transactionType == it)
+                            MaterialTheme.colorScheme.primary
+                        else MaterialTheme.colorScheme.secondary
                     )
                 ) {
                     Text(it)
@@ -142,10 +140,11 @@ fun TransactionScreen(navController: NavHostController) {
         }
 
         Spacer(Modifier.height(8.dp))
+
         OutlinedTextField(value = model, onValueChange = { model = it }, label = { Text("Model") }, modifier = Modifier.fillMaxWidth())
-        OutlinedTextField(value = serial, onValueChange = { serial = it }, label = { Text("Serial Number") }, modifier = Modifier.fillMaxWidth())
-        OutlinedTextField(value = phone, onValueChange = { phone = it }, label = { Text("Phone Number") }, modifier = Modifier.fillMaxWidth())
-        OutlinedTextField(value = aadhaar, onValueChange = { aadhaar = it }, label = { Text("Aadhaar Number") }, modifier = Modifier.fillMaxWidth())
+        OutlinedTextField(value = serial, onValueChange = { serial = it }, label = { Text("Serial") }, modifier = Modifier.fillMaxWidth())
+        OutlinedTextField(value = phone, onValueChange = { phone = it }, label = { Text("Phone") }, modifier = Modifier.fillMaxWidth())
+        OutlinedTextField(value = aadhaar, onValueChange = { aadhaar = it }, label = { Text("Aadhaar") }, modifier = Modifier.fillMaxWidth())
         OutlinedTextField(value = amount, onValueChange = { amount = it }, label = { Text("Amount") }, modifier = Modifier.fillMaxWidth())
         OutlinedTextField(value = quantity, onValueChange = { quantity = it }, label = { Text("Quantity") }, modifier = Modifier.fillMaxWidth())
         OutlinedTextField(value = date, onValueChange = { date = it }, label = { Text("Date") }, modifier = Modifier.fillMaxWidth())
@@ -155,7 +154,10 @@ fun TransactionScreen(navController: NavHostController) {
             Text(error, color = MaterialTheme.colorScheme.error)
         }
 
-        Button(onClick = { validateAndSubmit() }, modifier = Modifier.padding(top = 16.dp)) {
+        Button(
+            onClick = { validateAndSubmit() },
+            modifier = Modifier.padding(top = 16.dp)
+        ) {
             Text("Submit")
         }
     }
